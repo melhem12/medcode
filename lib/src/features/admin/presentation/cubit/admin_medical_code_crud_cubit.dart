@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../medical_codes/domain/entities/medical_code.dart';
 import '../../../medical_codes/domain/usecases/manage_medical_codes_usecases.dart';
 import '../../../../core/utils/file_export_helper.dart';
+import '../../../../core/error/exceptions.dart';
 
 part 'admin_medical_code_crud_state.dart';
 
@@ -32,6 +33,9 @@ class AdminMedicalCodeCrudCubit extends Cubit<AdminMedicalCodeCrudState> {
       if (isClosed) return;
       final displayPath = FileExportHelper.getDisplayPath(filePath);
       emit(AdminMedicalCodeExported(rows, filePath, displayPath));
+    } on ApiException catch (e) {
+      if (isClosed) return;
+      emit(AdminMedicalCodeCrudError(e.message));
     } catch (e) {
       if (isClosed) return;
       emit(AdminMedicalCodeCrudError(e.toString()));
@@ -48,6 +52,9 @@ class AdminMedicalCodeCrudCubit extends Cubit<AdminMedicalCodeCrudState> {
         (failure) => emit(AdminMedicalCodeCrudError(failure.message)),
         (code) => emit(AdminMedicalCodeCrudSuccess(code, 'Medical code created successfully')),
       );
+    } on ApiException catch (e) {
+      if (isClosed) return;
+      emit(AdminMedicalCodeCrudError(e.message));
     } catch (e) {
       if (isClosed) return;
       emit(AdminMedicalCodeCrudError(e.toString()));
@@ -64,6 +71,9 @@ class AdminMedicalCodeCrudCubit extends Cubit<AdminMedicalCodeCrudState> {
         (failure) => emit(AdminMedicalCodeCrudError(failure.message)),
         (code) => emit(AdminMedicalCodeCrudSuccess(code, 'Medical code updated successfully')),
       );
+    } on ApiException catch (e) {
+      if (isClosed) return;
+      emit(AdminMedicalCodeCrudError(e.message));
     } catch (e) {
       if (isClosed) return;
       emit(AdminMedicalCodeCrudError(e.toString()));
@@ -80,10 +90,12 @@ class AdminMedicalCodeCrudCubit extends Cubit<AdminMedicalCodeCrudState> {
         (failure) => emit(AdminMedicalCodeCrudError(failure.message)),
         (_) => emit(AdminMedicalCodeCrudDeleted()),
       );
+    } on ApiException catch (e) {
+      if (isClosed) return;
+      emit(AdminMedicalCodeCrudError(e.message));
     } catch (e) {
       if (isClosed) return;
       emit(AdminMedicalCodeCrudError(e.toString()));
     }
   }
 }
-

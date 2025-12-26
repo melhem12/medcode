@@ -9,7 +9,6 @@ import '../../../contents/presentation/cubit/contents_cubit.dart';
 import '../../../contents/domain/entities/content_node.dart';
 import '../cubit/admin_medical_code_crud_cubit.dart';
 import '../cubit/admin_medical_codes_list_cubit.dart';
-import '../../../../app/di/injection_container.dart' as di;
 
 class ManageMedicalCodesPage extends StatefulWidget {
   const ManageMedicalCodesPage({super.key});
@@ -44,225 +43,211 @@ class _ManageMedicalCodesPageState extends State<ManageMedicalCodesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<AdminMedicalCodeCrudCubit>(
-          create: (_) => di.sl<AdminMedicalCodeCrudCubit>(),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Manage Medical Codes'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/admin/home');
+            }
+          },
         ),
-        BlocProvider<AdminMedicalCodesListCubit>(
-          create: (_) => di.sl<AdminMedicalCodesListCubit>()..loadMedicalCodes(),
-        ),
-      ],
-      child: Builder(
-        builder: (context) {
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text('Manage Medical Codes'),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
+        actions: [
+          BlocBuilder<AdminMedicalCodeCrudCubit, AdminMedicalCodeCrudState>(
+            builder: (context, state) {
+              if (state is AdminMedicalCodeCrudLoading) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              }
+              return IconButton(
+                icon: const Icon(Icons.download),
                 onPressed: () {
-                  if (context.canPop()) {
-                    context.pop();
-                  } else {
-                    context.go('/admin/home');
-                  }
+                  context.read<AdminMedicalCodeCrudCubit>().export();
                 },
-              ),
-              actions: [
-                BlocBuilder<AdminMedicalCodeCrudCubit, AdminMedicalCodeCrudState>(
-                  builder: (context, state) {
-                    if (state is AdminMedicalCodeCrudLoading) {
-                      return const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    }
-                    return IconButton(
-                      icon: const Icon(Icons.download),
-                      onPressed: () {
-                        context.read<AdminMedicalCodeCrudCubit>().export();
-                      },
-                      tooltip: 'Export Medical Codes',
-                    );
-                  },
+                tooltip: 'Export Medical Codes',
+              );
+            },
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search codes...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          context.read<AdminMedicalCodesListCubit>().search('');
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(60),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search codes...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                context.read<AdminMedicalCodesListCubit>().search('');
-                              },
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              onChanged: (value) {
+                setState(() {}); // Update clear button visibility
+                context.read<AdminMedicalCodesListCubit>().search(value);
+              },
+            ),
+          ),
+        ),
+      ),
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<AdminMedicalCodeCrudCubit, AdminMedicalCodeCrudState>(
+            listener: (context, state) {
+              if (state is AdminMedicalCodeExported) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Exported to: ${state.displayPath}'),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              } else if (state is AdminMedicalCodeCrudSuccess) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(state.message)),
+                );
+                // Refresh the list
+                context.read<AdminMedicalCodesListCubit>().refresh();
+              } else if (state is AdminMedicalCodeCrudDeleted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Medical code deleted successfully')),
+                );
+                // Refresh the list
+                context.read<AdminMedicalCodesListCubit>().refresh();
+              } else if (state is AdminMedicalCodeCrudError) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+        child: BlocBuilder<AdminMedicalCodesListCubit, AdminMedicalCodesListState>(
+          builder: (context, state) {
+            if (state.status == AdminMedicalCodesListStatus.loading) {
+              return const LoadingIndicator(
+                message: 'Loading medical codes...',
+              );
+            }
+
+            if (state.status == AdminMedicalCodesListStatus.error) {
+              return ErrorView(
+                message: state.errorMessage ?? 'Failed to load medical codes',
+                onRetry: () {
+                  context.read<AdminMedicalCodesListCubit>().loadMedicalCodes();
+                },
+              );
+            }
+
+            return Column(
+              children: [
+                // Header with count and add button
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total: ${state.total} codes',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
                       ),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                    onChanged: (value) {
-                      setState(() {}); // Update clear button visibility
-                      context.read<AdminMedicalCodesListCubit>().search(value);
-                    },
+                      ElevatedButton.icon(
+                        onPressed: () => _showMedicalCodeForm(context),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Add Code'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ),
-            body: MultiBlocListener(
-              listeners: [
-                BlocListener<AdminMedicalCodeCrudCubit, AdminMedicalCodeCrudState>(
-                  listener: (context, state) {
-                    if (state is AdminMedicalCodeExported) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Exported to: ${state.displayPath}'),
-                          duration: const Duration(seconds: 3),
-                        ),
-                      );
-                    } else if (state is AdminMedicalCodeCrudSuccess) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(state.message)),
-                      );
-                      // Refresh the list
-                      context.read<AdminMedicalCodesListCubit>().refresh();
-                    } else if (state is AdminMedicalCodeCrudDeleted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Medical code deleted successfully')),
-                      );
-                      // Refresh the list
-                      context.read<AdminMedicalCodesListCubit>().refresh();
-                    } else if (state is AdminMedicalCodeCrudError) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(state.message),
-                          backgroundColor: Theme.of(context).colorScheme.error,
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
-              child: BlocBuilder<AdminMedicalCodesListCubit, AdminMedicalCodesListState>(
-                builder: (context, state) {
-                  if (state.status == AdminMedicalCodesListStatus.loading) {
-                    return const LoadingIndicator(
-                      message: 'Loading medical codes...',
-                    );
-                  }
+                // List
+                Expanded(
+                  child: state.codes.isEmpty
+                      ? const Center(child: Text('No medical codes found'))
+                      : RefreshIndicator(
+                          onRefresh: () async {
+                            await context.read<AdminMedicalCodesListCubit>().refresh();
+                          },
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(16),
+                            itemCount: state.codes.length + (state.hasMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index >= state.codes.length) {
+                                return const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
 
-                  if (state.status == AdminMedicalCodesListStatus.error) {
-                    return ErrorView(
-                      message: state.errorMessage ?? 'Failed to load medical codes',
-                      onRetry: () {
-                        context.read<AdminMedicalCodesListCubit>().loadMedicalCodes();
-                      },
-                    );
-                  }
-
-                  return Column(
-                    children: [
-                      // Header with count and add button
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Total: ${state.total} codes',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            ElevatedButton.icon(
-                              onPressed: () => _showMedicalCodeForm(context),
-                              icon: const Icon(Icons.add, size: 18),
-                              label: const Text('Add Code'),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // List
-                      Expanded(
-                        child: state.codes.isEmpty
-                            ? const Center(child: Text('No medical codes found'))
-                            : RefreshIndicator(
-                                onRefresh: () async {
-                                  await context.read<AdminMedicalCodesListCubit>().refresh();
-                                },
-                                child: ListView.builder(
-                                  controller: _scrollController,
-                                  padding: const EdgeInsets.all(16),
-                                  itemCount: state.codes.length + (state.hasMore ? 1 : 0),
-                                  itemBuilder: (context, index) {
-                                    if (index >= state.codes.length) {
-                                      return const Padding(
-                                        padding: EdgeInsets.all(16),
-                                        child: Center(
-                                          child: CircularProgressIndicator(),
-                                        ),
-                                      );
-                                    }
-
-                                    final code = state.codes[index];
-                                    return Card(
-                                      margin: const EdgeInsets.only(bottom: 12),
-                                      child: MedicalCodeListTile(
-                                        code: code,
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(Icons.edit_outlined),
-                                              onPressed: () => _showMedicalCodeForm(context, code: code),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(Icons.delete_outline),
-                                              onPressed: () => _confirmDelete(context, code.id),
-                                            ),
-                                          ],
-                                        ),
+                              final code = state.codes[index];
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                child: MedicalCodeListTile(
+                                  code: code,
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit_outlined),
+                                        onPressed: () => _showMedicalCodeForm(context, code: code),
                                       ),
-                                    );
-                                  },
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline),
+                                        onPressed: () => _confirmDelete(context, code.id),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                      ),
-                      // Pagination info
-                      if (state.codes.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          color: Colors.grey[100],
-                          child: Text(
-                            'Page ${state.currentPage} of ${state.totalPages}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                            textAlign: TextAlign.center,
+                              );
+                            },
                           ),
                         ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          );
-        },
+                ),
+                // Pagination info
+                if (state.codes.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    color: Colors.grey[100],
+                    child: Text(
+                      'Page ${state.currentPage} of ${state.totalPages}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -304,11 +289,13 @@ class _ManageMedicalCodesPageState extends State<ManageMedicalCodesPage> {
     if (contentsState is ContentsLoaded) {
       rootContents = contentsState.contents;
     }
-    
+    bool parentExists(String? id) =>
+        id != null && rootContents.any((c) => c.id == id);
+
     // Initialize selected values based on existing code
     String? initialParentId;
     String? initialSubcategoryId;
-    
+
     if (code?.contentId != null) {
       // Check if contentId is a root content or a subcategory
       final content = _findContentById(rootContents, code!.contentId!);
@@ -328,7 +315,12 @@ class _ManageMedicalCodesPageState extends State<ManageMedicalCodesPage> {
         }
       }
     }
-    
+    // Ensure initial selections exist in the available options; otherwise reset to null
+    if (!parentExists(initialParentId)) {
+      initialParentId = null;
+      initialSubcategoryId = null;
+    }
+
     // Selected content (parent) and subcategory
     final selectedParentId = ValueNotifier<String?>(initialParentId);
     final selectedSubcategoryId = ValueNotifier<String?>(initialSubcategoryId);
@@ -381,8 +373,9 @@ class _ManageMedicalCodesPageState extends State<ManageMedicalCodesPage> {
               ValueListenableBuilder<String?>(
                 valueListenable: selectedParentId,
                 builder: (context, parentValue, _) {
+                  final safeParentValue = parentExists(parentValue) ? parentValue : null;
                   return DropdownButtonFormField<String?>(
-                    value: parentValue,
+                    value: safeParentValue,
                     decoration: const InputDecoration(
                       labelText: 'Content Category',
                       border: OutlineInputBorder(),
@@ -402,7 +395,7 @@ class _ManageMedicalCodesPageState extends State<ManageMedicalCodesPage> {
                       )),
                     ],
                     onChanged: (newValue) {
-                      selectedParentId.value = newValue;
+                      selectedParentId.value = parentExists(newValue) ? newValue : null;
                       // Reset subcategory when parent changes
                       selectedSubcategoryId.value = null;
                     },

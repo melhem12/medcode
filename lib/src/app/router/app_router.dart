@@ -1,5 +1,6 @@
-import 'package:go_router/go_router.dart';
 import 'package:get_it/get_it.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/user_type_selection_page.dart';
@@ -17,10 +18,13 @@ import '../../features/admin/presentation/pages/manage_contents_page.dart';
 import '../../features/admin/presentation/pages/manage_medical_codes_page.dart';
 import '../../features/admin/presentation/pages/manage_specialities_page.dart';
 import '../../features/admin/presentation/pages/manage_hospitals_page.dart';
+import '../../features/admin/presentation/cubit/admin_medical_code_crud_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_medical_codes_list_cubit.dart';
 import '../../features/medical_codes/presentation/pages/admin_import_page.dart';
 import '../../features/medical_codes/presentation/pages/medical_code_detail_page.dart';
 import '../../features/user/presentation/pages/manage_offline_data_page.dart';
 import '../../core/utils/user_type_rules.dart';
+import '../di/injection_container.dart' as di;
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
@@ -129,7 +133,17 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/admin/medical-codes',
-      builder: (context, state) => const ManageMedicalCodesPage(),
+      builder: (context, state) => MultiBlocProvider(
+        providers: [
+          BlocProvider<AdminMedicalCodeCrudCubit>(
+            create: (_) => di.sl<AdminMedicalCodeCrudCubit>(),
+          ),
+          BlocProvider<AdminMedicalCodesListCubit>(
+            create: (_) => di.sl<AdminMedicalCodesListCubit>()..loadMedicalCodes(),
+          ),
+        ],
+        child: const ManageMedicalCodesPage(),
+      ),
     ),
     GoRoute(
       path: '/admin/specialities',
