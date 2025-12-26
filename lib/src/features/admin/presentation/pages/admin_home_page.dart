@@ -54,43 +54,63 @@ class AdminHomePage extends StatelessWidget {
           ),
         ],
       ),
-      body: GridView.count(
-        crossAxisCount: 2,
-        padding: const EdgeInsets.all(16),
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        children: [
-          _buildAdminCard(
-            context,
-            title: 'Manage Contents',
-            icon: Icons.folder_outlined,
-            onTap: () => context.go('/admin/contents'),
-          ),
-          _buildAdminCard(
-            context,
-            title: 'Manage Medical Codes',
-            icon: Icons.medical_services_outlined,
-            onTap: () => context.go('/admin/medical-codes'),
-          ),
-          _buildAdminCard(
-            context,
-            title: 'Import Codes',
-            icon: Icons.upload_file_outlined,
-            onTap: () => context.go('/admin/import'),
-          ),
-          _buildAdminCard(
-            context,
-            title: 'Manage Specialities',
-            icon: Icons.badge_outlined,
-            onTap: () => context.go('/admin/specialities'),
-          ),
-          _buildAdminCard(
-            context,
-            title: 'Manage Hospitals',
-            icon: Icons.local_hospital_outlined,
-            onTap: () => context.go('/admin/hospitals'),
-          ),
-        ],
+      body: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, authState) {
+          final isSuperAdmin = authState is AuthAuthenticated &&
+              UserTypeRules.isSuperAdmin(
+                authState.user.userType,
+                authState.user.adminSubType,
+              );
+
+          final List<Widget> cards = [
+            _buildAdminCard(
+              context,
+              title: 'Manage Contents',
+              icon: Icons.folder_outlined,
+              onTap: () => context.go('/admin/contents'),
+            ),
+            _buildAdminCard(
+              context,
+              title: 'Manage Medical Codes',
+              icon: Icons.medical_services_outlined,
+              onTap: () => context.go('/admin/medical-codes'),
+            ),
+            _buildAdminCard(
+              context,
+              title: 'Import Codes',
+              icon: Icons.upload_file_outlined,
+              onTap: () => context.go('/admin/import'),
+            ),
+          ];
+
+          // Add super-admin only cards
+          if (isSuperAdmin) {
+            cards.add(
+              _buildAdminCard(
+                context,
+                title: 'Manage Specialities',
+                icon: Icons.badge_outlined,
+                onTap: () => context.go('/admin/specialities'),
+              ),
+            );
+            cards.add(
+              _buildAdminCard(
+                context,
+                title: 'Manage Hospitals',
+                icon: Icons.local_hospital_outlined,
+                onTap: () => context.go('/admin/hospitals'),
+              ),
+            );
+          }
+
+          return GridView.count(
+            crossAxisCount: 2,
+            padding: const EdgeInsets.all(16),
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            children: cards,
+          );
+        },
       ),
     );
   }

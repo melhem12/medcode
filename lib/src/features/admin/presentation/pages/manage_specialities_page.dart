@@ -1,9 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../core/utils/user_type_rules.dart';
 import '../../presentation/cubit/admin_speciality_hospital_cubit.dart';
-import '../../../auth/presentation/cubit/specialities_cubit.dart';
+import '../../../../app/di/injection_container.dart' as di;
+// TODO: Uncomment when SpecialitiesCubit is implemented
+// import '../../../auth/presentation/cubit/specialities_cubit.dart';
+
+// Temporary stub classes until SpecialitiesCubit is implemented
+class SpecialitiesCubit extends Cubit<SpecialitiesState> {
+  SpecialitiesCubit() : super(SpecialitiesInitial());
+  void loadSpecialities() {}
+}
+
+abstract class SpecialitiesState {}
+
+class SpecialitiesInitial extends SpecialitiesState {}
+
+class SpecialitiesLoading extends SpecialitiesState {}
+
+class SpecialitiesError extends SpecialitiesState {
+  final String message;
+  SpecialitiesError(this.message);
+}
+
+class SpecialitiesLoaded extends SpecialitiesState {
+  final List<dynamic> specialities;
+  SpecialitiesLoaded(this.specialities);
+}
 
 class ManageSpecialitiesPage extends StatefulWidget {
   const ManageSpecialitiesPage({super.key});
@@ -96,7 +121,11 @@ class _ManageSpecialitiesPageState extends State<ManageSpecialitiesPage> {
       );
     }
 
-    return Scaffold(
+    return BlocProvider<SpecialitiesCubit>(
+      create: (_) => SpecialitiesCubit(),
+      child: BlocProvider<AdminSpecialityHospitalCubit>(
+        create: (_) => di.sl<AdminSpecialityHospitalCubit>(),
+        child: Scaffold(
       appBar: AppBar(
         title: const Text('Manage Specialities'),
       ),
@@ -173,6 +202,8 @@ class _ManageSpecialitiesPageState extends State<ManageSpecialitiesPage> {
             },
           );
         },
+      ),
+        ),
       ),
     );
   }

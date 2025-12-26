@@ -1,9 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../core/utils/user_type_rules.dart';
 import '../../presentation/cubit/admin_speciality_hospital_cubit.dart';
-import '../../../auth/presentation/cubit/hospitals_cubit.dart';
+import '../../../../app/di/injection_container.dart' as di;
+// TODO: Uncomment when HospitalsCubit is implemented
+// import '../../../auth/presentation/cubit/hospitals_cubit.dart';
+
+// Temporary stub classes until HospitalsCubit is implemented
+class HospitalsCubit extends Cubit<HospitalsState> {
+  HospitalsCubit() : super(HospitalsInitial());
+  void loadHospitals() {}
+}
+
+abstract class HospitalsState {}
+
+class HospitalsInitial extends HospitalsState {}
+
+class HospitalsLoading extends HospitalsState {}
+
+class HospitalsError extends HospitalsState {
+  final String message;
+  HospitalsError(this.message);
+}
+
+class HospitalsLoaded extends HospitalsState {
+  final List<dynamic> hospitals;
+  HospitalsLoaded(this.hospitals);
+}
 
 class ManageHospitalsPage extends StatefulWidget {
   const ManageHospitalsPage({super.key});
@@ -96,7 +121,11 @@ class _ManageHospitalsPageState extends State<ManageHospitalsPage> {
       );
     }
 
-    return Scaffold(
+    return BlocProvider<HospitalsCubit>(
+      create: (_) => HospitalsCubit(),
+      child: BlocProvider<AdminSpecialityHospitalCubit>(
+        create: (_) => di.sl<AdminSpecialityHospitalCubit>(),
+        child: Scaffold(
       appBar: AppBar(
         title: const Text('Manage Hospitals'),
       ),
@@ -173,6 +202,8 @@ class _ManageHospitalsPageState extends State<ManageHospitalsPage> {
             },
           );
         },
+      ),
+        ),
       ),
     );
   }

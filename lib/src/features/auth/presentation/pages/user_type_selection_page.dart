@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../app/theme/design_tokens.dart';
 
 class UserTypeSelectionPage extends StatefulWidget {
   const UserTypeSelectionPage({super.key});

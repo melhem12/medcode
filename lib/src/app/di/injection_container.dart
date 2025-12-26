@@ -43,6 +43,9 @@ import '../../features/favorites/domain/repositories/favorites_repository.dart';
 import '../../features/favorites/presentation/cubit/favorites_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_content_crud_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_medical_code_crud_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_speciality_hospital_cubit.dart';
+import '../../features/admin/data/sources/admin_speciality_hospital_remote_data_source.dart';
+import '../../features/admin/domain/usecases/manage_specialities_hospitals_usecases.dart';
 
 final sl = GetIt.instance;
 
@@ -207,36 +210,32 @@ Future<void> init() async {
       exportUseCase: sl<ExportContentsUseCase>(),
     ),
   );
+  sl.registerLazySingleton(() => AdminMedicalCodeCrudCubit(
+      exportUseCase: sl<ExportMedicalCodesUseCase>()));
+
   sl.registerLazySingleton(
-    () => AdminMedicalCodeCrudCubit(
-      exportUseCase: sl<ExportMedicalCodesUseCase>(),
+    () => AdminSpecialityHospitalRemoteDataSource(sl<DioClient>()),
+  );
+  sl.registerLazySingleton(() =>
+      CreateSpecialityUseCase(sl<AdminSpecialityHospitalRemoteDataSource>()));
+  sl.registerLazySingleton(() =>
+      UpdateSpecialityUseCase(sl<AdminSpecialityHospitalRemoteDataSource>()));
+  sl.registerLazySingleton(() =>
+      DeleteSpecialityUseCase(sl<AdminSpecialityHospitalRemoteDataSource>()));
+  sl.registerLazySingleton(() =>
+      CreateHospitalUseCase(sl<AdminSpecialityHospitalRemoteDataSource>()));
+  sl.registerLazySingleton(() =>
+      UpdateHospitalUseCase(sl<AdminSpecialityHospitalRemoteDataSource>()));
+  sl.registerLazySingleton(() =>
+      DeleteHospitalUseCase(sl<AdminSpecialityHospitalRemoteDataSource>()));
+  sl.registerLazySingleton(
+    () => AdminSpecialityHospitalCubit(
+      createSpeciality: sl<CreateSpecialityUseCase>(),
+      updateSpeciality: sl<UpdateSpecialityUseCase>(),
+      deleteSpeciality: sl<DeleteSpecialityUseCase>(),
+      createHospital: sl<CreateHospitalUseCase>(),
+      updateHospital: sl<UpdateHospitalUseCase>(),
+      deleteHospital: sl<DeleteHospitalUseCase>(),
     ),
   );
-  
-  // TODO: Uncomment when AdminSpecialityHospital features are implemented
-  // sl.registerLazySingleton(
-  //   () => AdminSpecialityHospitalRemoteDataSource(sl<DioClient>()),
-  // );
-  // sl.registerLazySingleton(
-  //     () => CreateSpecialityUseCase(sl<AdminSpecialityHospitalRemoteDataSource>()));
-  // sl.registerLazySingleton(
-  //     () => UpdateSpecialityUseCase(sl<AdminSpecialityHospitalRemoteDataSource>()));
-  // sl.registerLazySingleton(
-  //     () => DeleteSpecialityUseCase(sl<AdminSpecialityHospitalRemoteDataSource>()));
-  // sl.registerLazySingleton(
-  //     () => CreateHospitalUseCase(sl<AdminSpecialityHospitalRemoteDataSource>()));
-  // sl.registerLazySingleton(
-  //     () => UpdateHospitalUseCase(sl<AdminSpecialityHospitalRemoteDataSource>()));
-  // sl.registerLazySingleton(
-  //     () => DeleteHospitalUseCase(sl<AdminSpecialityHospitalRemoteDataSource>()));
-  // sl.registerLazySingleton(
-  //   () => AdminSpecialityHospitalCubit(
-  //     createSpeciality: sl<CreateSpecialityUseCase>(),
-  //     updateSpeciality: sl<UpdateSpecialityUseCase>(),
-  //     deleteSpeciality: sl<DeleteSpecialityUseCase>(),
-  //     createHospital: sl<CreateHospitalUseCase>(),
-  //     updateHospital: sl<UpdateHospitalUseCase>(),
-  //     deleteHospital: sl<DeleteHospitalUseCase>(),
-  //   ),
-  // );
 }

@@ -9,10 +9,10 @@ class ContentNodeModel extends ContentNode {
     required super.id,
     required super.title,
     required super.level,
-    @JsonKey(name: 'section_label') super.sectionLabel,
-    @JsonKey(name: 'page_marker') super.pageMarker,
-    @JsonKey(name: 'code_hint') super.codeHint,
-    @JsonKey(name: 'parent_id') super.parentId,
+    super.sectionLabel,
+    super.pageMarker,
+    super.codeHint,
+    super.parentId,
     List<ContentNode>? children,
   }) : super(children: children ?? []);
 

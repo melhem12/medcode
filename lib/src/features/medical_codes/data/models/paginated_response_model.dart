@@ -1,5 +1,4 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'medical_code_model.dart';
 
 part 'paginated_response_model.g.dart';
 

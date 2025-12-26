@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:equatable/equatable.dart';
 import '../../data/datasources/offline_data_local_data_source.dart';
 import 'offline_data_state.dart';
 

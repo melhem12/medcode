@@ -15,9 +15,8 @@ import '../../features/user/presentation/pages/profile_page.dart';
 import '../../features/admin/presentation/pages/admin_home_page.dart';
 import '../../features/admin/presentation/pages/manage_contents_page.dart';
 import '../../features/admin/presentation/pages/manage_medical_codes_page.dart';
-// TODO: Uncomment when AdminSpecialityHospital features are implemented
-// import '../../features/admin/presentation/pages/manage_specialities_page.dart';
-// import '../../features/admin/presentation/pages/manage_hospitals_page.dart';
+import '../../features/admin/presentation/pages/manage_specialities_page.dart';
+import '../../features/admin/presentation/pages/manage_hospitals_page.dart';
 import '../../features/medical_codes/presentation/pages/admin_import_page.dart';
 import '../../features/medical_codes/presentation/pages/medical_code_detail_page.dart';
 import '../../features/user/presentation/pages/manage_offline_data_page.dart';
@@ -26,6 +25,10 @@ import '../../core/utils/user_type_rules.dart';
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
   routes: [
+    GoRoute(
+      path: '/',
+      redirect: (_, __) => '/home',
+    ),
     GoRoute(
       path: '/splash',
       builder: (context, state) => const SplashPage(),
@@ -124,15 +127,14 @@ final GoRouter appRouter = GoRouter(
       path: '/admin/medical-codes',
       builder: (context, state) => const ManageMedicalCodesPage(),
     ),
-    // TODO: Uncomment when AdminSpecialityHospital features are implemented
-    // GoRoute(
-    //   path: '/admin/specialities',
-    //   builder: (context, state) => const ManageSpecialitiesPage(),
-    // ),
-    // GoRoute(
-    //   path: '/admin/hospitals',
-    //   builder: (context, state) => const ManageHospitalsPage(),
-    // ),
+    GoRoute(
+      path: '/admin/specialities',
+      builder: (context, state) => const ManageSpecialitiesPage(),
+    ),
+    GoRoute(
+      path: '/admin/hospitals',
+      builder: (context, state) => const ManageHospitalsPage(),
+    ),
     GoRoute(
       path: '/admin/import',
       builder: (context, state) {

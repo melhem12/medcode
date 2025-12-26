@@ -23,7 +23,7 @@ class AuthResponseModel extends AuthResponse {
   }
 
   Map<String, dynamic> toJson() => {
-    'user': (user as UserModel).toJson(),
+    'user': user.toJson(),
     'token': token,
   };
 
