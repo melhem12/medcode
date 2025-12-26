@@ -12,11 +12,13 @@ class GetMedicalCodesUseCase {
     int page = 1,
     String? search,
     String? category,
+    String? contentId,
   }) {
     return repository.getMedicalCodes(
       page: page,
       search: search,
       category: category,
+      contentId: contentId,
     );
   }
 }

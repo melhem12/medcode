@@ -8,6 +8,7 @@ abstract class MedicalCodesRepository {
     int page = 1,
     String? search,
     String? category,
+    String? contentId,
   });
   Future<Either<Failure, MedicalCode>> getMedicalCodeById(String id);
   Future<Either<Failure, ImportResult>> importMedicalCodes(
@@ -15,6 +16,9 @@ abstract class MedicalCodesRepository {
     String? contentId,
   );
   Future<List<Map<String, dynamic>>> exportMedicalCodes();
+  Future<Either<Failure, MedicalCode>> createMedicalCode(Map<String, dynamic> data);
+  Future<Either<Failure, MedicalCode>> updateMedicalCode(String id, Map<String, dynamic> data);
+  Future<Either<Failure, void>> deleteMedicalCode(String id);
 }
 
 

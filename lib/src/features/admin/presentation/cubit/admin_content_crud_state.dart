@@ -34,6 +34,15 @@ class AdminContentExported extends AdminContentCrudState {
   List<Object> get props => [rows, filePath, displayPath];
 }
 
+class AdminContentImported extends AdminContentCrudState {
+  final ImportResult result;
+
+  AdminContentImported(this.result);
+
+  @override
+  List<Object> get props => [result];
+}
+
 class AdminContentCrudError extends AdminContentCrudState {
   final String message;
 

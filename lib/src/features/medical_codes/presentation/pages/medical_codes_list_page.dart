@@ -23,7 +23,12 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
     // Use addPostFrameCallback to ensure context is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<CodeListBloc>().add(const LoadMedicalCodesEvent());
+        // Check if contentId is provided in query parameters
+        final uri = GoRouterState.of(context).uri;
+        final contentId = uri.queryParameters['contentId'];
+        context.read<CodeListBloc>().add(
+          LoadMedicalCodesEvent(contentId: contentId),
+        );
       }
     });
   }
@@ -35,8 +40,15 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
   }
 
   void _performSearch(String query) {
+    // Get contentId from current route if available
+    final uri = GoRouterState.of(context).uri;
+    final contentId = uri.queryParameters['contentId'];
+    
     context.read<CodeListBloc>().add(
-          LoadMedicalCodesEvent(search: query.isEmpty ? null : query),
+          LoadMedicalCodesEvent(
+            search: query.isEmpty ? null : query,
+            contentId: contentId,
+          ),
         );
   }
 
@@ -79,10 +91,16 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
           }
 
           if (state is CodeListError) {
+            // Get contentId from current route if available
+            final uri = GoRouterState.of(context).uri;
+            final contentId = uri.queryParameters['contentId'];
+            
             return ErrorView(
               message: state.message,
               onRetry: () {
-                context.read<CodeListBloc>().add(const LoadMedicalCodesEvent());
+                context.read<CodeListBloc>().add(
+                  LoadMedicalCodesEvent(contentId: contentId),
+                );
               },
             );
           }

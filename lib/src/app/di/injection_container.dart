@@ -21,6 +21,7 @@ import '../../features/medical_codes/domain/usecases/manage_medical_codes_usecas
 import '../../features/medical_codes/presentation/bloc/code_list_bloc.dart';
 import '../../features/medical_codes/presentation/bloc/code_detail_bloc.dart';
 import '../../features/medical_codes/presentation/cubit/admin_import_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_medical_codes_list_cubit.dart';
 import '../../features/contents/data/datasources/contents_remote_data_source.dart';
 import '../../features/contents/data/repositories/contents_repository_impl.dart';
 import '../../features/contents/domain/repositories/contents_repository.dart';
@@ -44,8 +45,12 @@ import '../../features/favorites/presentation/cubit/favorites_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_content_crud_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_medical_code_crud_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_speciality_hospital_cubit.dart';
+import '../../features/admin/presentation/cubit/specialities_cubit.dart';
+import '../../features/admin/presentation/cubit/hospitals_cubit.dart';
 import '../../features/admin/data/sources/admin_speciality_hospital_remote_data_source.dart';
 import '../../features/admin/domain/usecases/manage_specialities_hospitals_usecases.dart';
+import '../../features/auth/data/datasources/specialities_remote_data_source.dart';
+import '../../features/auth/data/datasources/hospitals_remote_data_source.dart';
 
 final sl = GetIt.instance;
 
@@ -66,6 +71,12 @@ Future<void> init() async {
       secureStorage: const FlutterSecureStorage(),
       sharedPreferences: sl<SharedPreferences>(),
     ),
+  );
+  sl.registerLazySingleton<SpecialitiesRemoteDataSource>(
+    () => SpecialitiesRemoteDataSourceImpl(sl<DioClient>()),
+  );
+  sl.registerLazySingleton<HospitalsRemoteDataSource>(
+    () => HospitalsRemoteDataSourceImpl(sl<DioClient>()),
   );
 
   // Auth - Repository
@@ -116,6 +127,15 @@ Future<void> init() async {
   sl.registerLazySingleton(
     () => ExportMedicalCodesUseCase(sl<MedicalCodesRepository>()),
   );
+  sl.registerLazySingleton(
+    () => CreateMedicalCodeUseCase(sl<MedicalCodesRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => UpdateMedicalCodeUseCase(sl<MedicalCodesRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => DeleteMedicalCodeUseCase(sl<MedicalCodesRepository>()),
+  );
 
   // Medical Codes - Bloc/Cubit
   sl.registerLazySingleton(
@@ -146,6 +166,18 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetContentsUseCase(sl<ContentsRepository>()));
   sl.registerLazySingleton(
     () => ExportContentsUseCase(sl<ContentsRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => ImportContentsUseCase(sl<ContentsRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => CreateContentUseCase(sl<ContentsRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => UpdateContentUseCase(sl<ContentsRepository>()),
+  );
+  sl.registerLazySingleton(
+    () => DeleteContentUseCase(sl<ContentsRepository>()),
   );
 
   // Contents - Cubit
@@ -205,13 +237,27 @@ Future<void> init() async {
   );
 
   // Admin - Cubits
+  // Note: ExportContentsUseCase and ImportContentsUseCase are already registered above
   sl.registerLazySingleton(
     () => AdminContentCrudCubit(
       exportUseCase: sl<ExportContentsUseCase>(),
+      importUseCase: sl<ImportContentsUseCase>(),
+      createUseCase: sl<CreateContentUseCase>(),
+      updateUseCase: sl<UpdateContentUseCase>(),
+      deleteUseCase: sl<DeleteContentUseCase>(),
     ),
   );
-  sl.registerLazySingleton(() => AdminMedicalCodeCrudCubit(
-      exportUseCase: sl<ExportMedicalCodesUseCase>()));
+  sl.registerLazySingleton(
+    () => AdminMedicalCodeCrudCubit(
+      exportUseCase: sl<ExportMedicalCodesUseCase>(),
+      createUseCase: sl<CreateMedicalCodeUseCase>(),
+      updateUseCase: sl<UpdateMedicalCodeUseCase>(),
+      deleteUseCase: sl<DeleteMedicalCodeUseCase>(),
+    ),
+  );
+  sl.registerFactory(
+    () => AdminMedicalCodesListCubit(dioClient: sl<DioClient>()),
+  );
 
   sl.registerLazySingleton(
     () => AdminSpecialityHospitalRemoteDataSource(sl<DioClient>()),
@@ -236,6 +282,18 @@ Future<void> init() async {
       createHospital: sl<CreateHospitalUseCase>(),
       updateHospital: sl<UpdateHospitalUseCase>(),
       deleteHospital: sl<DeleteHospitalUseCase>(),
+    ),
+  );
+  
+  // Admin - Specialities & Hospitals Cubits
+  sl.registerLazySingleton(
+    () => SpecialitiesCubit(
+      dataSource: sl<SpecialitiesRemoteDataSource>(),
+    ),
+  );
+  sl.registerLazySingleton(
+    () => HospitalsCubit(
+      dataSource: sl<HospitalsRemoteDataSource>(),
     ),
   );
 }

@@ -139,7 +139,15 @@ class _ContentsHomePageState extends State<ContentsHomePage> {
       color: Colors.white,
       child: InkWell(
         onTap: () {
-          context.go('/medical-codes?contentId=${content.id}');
+          // If content has children (subcategories), show them
+          // Otherwise, show medical codes for this content
+          if (content.children.isNotEmpty) {
+            // Navigate to show subcategories - reuse the same page with children
+            _navigateToSubcategories(context, content);
+          } else {
+            // Navigate to medical codes filtered by contentId
+            context.go('/medical-codes?contentId=${content.id}');
+          }
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
@@ -292,5 +300,162 @@ class _ContentsHomePageState extends State<ContentsHomePage> {
       parts.add('Page: ${content.pageMarker}');
     }
     return parts.join(' ');
+  }
+
+  void _navigateToSubcategories(BuildContext context, ContentNode content) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (ctx) => _SubcategoriesPage(
+          parentContent: content,
+          subcategories: content.children,
+        ),
+      ),
+    );
+  }
+}
+
+// Page to show subcategories of a content
+class _SubcategoriesPage extends StatelessWidget {
+  final ContentNode parentContent;
+  final List<ContentNode> subcategories;
+
+  const _SubcategoriesPage({
+    required this.parentContent,
+    required this.subcategories,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey.shade100,
+      appBar: AppBar(
+        title: Text(parentContent.title),
+        leading: BackButton(
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Container(
+        color: Colors.grey.shade100,
+        child: GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.85,
+          ),
+          itemCount: subcategories.length,
+          itemBuilder: (context, index) {
+            final subcategory = subcategories[index];
+            return _buildSubcategoryCard(context, subcategory);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubcategoryCard(BuildContext context, ContentNode subcategory) {
+    final icon = _getIconForCategory(subcategory.title);
+    
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide.none,
+      ),
+      color: Colors.white,
+      child: InkWell(
+        onTap: () {
+          // If subcategory has children, show them recursively
+          // Otherwise, show medical codes for this subcategory
+          if (subcategory.children.isNotEmpty) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (ctx) => _SubcategoriesPage(
+                  parentContent: subcategory,
+                  subcategories: subcategory.children,
+                ),
+              ),
+            );
+          } else {
+            // Navigate to medical codes filtered by contentId
+            context.go('/medical-codes?contentId=${subcategory.id}');
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Center(
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: DesignTokens.primary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: DesignTokens.primary.withOpacity(0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 36,
+                    color: DesignTokens.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                subcategory.title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: const Color(0xFF1A237E),
+                    ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subcategory.sectionLabel ?? 'Subcategory',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                      height: 1.3,
+                    ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getIconForCategory(String title) {
+    final lowerTitle = title.toLowerCase();
+    if (lowerTitle.contains('anesthesia')) {
+      return Icons.medical_services_outlined;
+    } else if (lowerTitle.contains('integumentary') || lowerTitle.contains('skin')) {
+      return Icons.face_outlined;
+    } else if (lowerTitle.contains('musculoskeletal') || lowerTitle.contains('bone')) {
+      return Icons.accessibility_new_outlined;
+    } else if (lowerTitle.contains('respiratory') || lowerTitle.contains('lung')) {
+      return Icons.air_outlined;
+    } else if (lowerTitle.contains('cardiovascular') || lowerTitle.contains('heart')) {
+      return Icons.favorite_outline;
+    } else if (lowerTitle.contains('digestive') || lowerTitle.contains('gastro')) {
+      return Icons.restaurant_outlined;
+    } else if (lowerTitle.contains('eye') || lowerTitle.contains('ocular')) {
+      return Icons.remove_red_eye_outlined;
+    } else if (lowerTitle.contains('medicine')) {
+      return Icons.medication_outlined;
+    }
+    return Icons.folder_outlined;
   }
 }

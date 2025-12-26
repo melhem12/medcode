@@ -27,7 +27,7 @@ final GoRouter appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      redirect: (_, __) => '/home',
+      redirect: (_, __) => '/splash',
     ),
     GoRoute(
       path: '/splash',
@@ -97,6 +97,10 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) {
         // Check if user is admin or super_admin
         try {
+          if (!GetIt.instance.isRegistered<AuthBloc>()) {
+            return const ContentsHomePage();
+          }
+          
           final authState = GetIt.instance<AuthBloc>().state;
           if (authState is AuthAuthenticated) {
             final isAdmin = UserTypeRules.isAdmin(
@@ -149,18 +153,25 @@ final GoRouter appRouter = GoRouter(
   ],
   redirect: (context, state) {
     try {
-      final authState = GetIt.instance<AuthBloc>().state;
-      final isLoginRoute = state.matchedLocation == '/login' ||
-          state.matchedLocation == '/user-type-selection' ||
-          state.matchedLocation == '/professional-information' ||
-          state.matchedLocation == '/register' ||
-          state.matchedLocation == '/admin-subtype-selection';
-      
       // Always allow splash screen to show
       final isSplashRoute = state.matchedLocation == '/splash';
       if (isSplashRoute) {
         return null; // Allow splash to handle navigation
       }
+
+      // Check if AuthBloc is registered before accessing it
+      if (!GetIt.instance.isRegistered<AuthBloc>()) {
+        return '/splash';
+      }
+
+      final authBloc = GetIt.instance<AuthBloc>();
+      final authState = authBloc.state;
+      
+      final isLoginRoute = state.matchedLocation == '/login' ||
+          state.matchedLocation == '/user-type-selection' ||
+          state.matchedLocation == '/professional-information' ||
+          state.matchedLocation == '/register' ||
+          state.matchedLocation == '/admin-subtype-selection';
 
       // If initial state, don't redirect yet - let splash handle it
       if (authState is AuthInitial) {
@@ -183,7 +194,8 @@ final GoRouter appRouter = GoRouter(
       if (state.matchedLocation == '/splash') {
         return null;
       }
-      return '/login';
+      // Default to splash screen on error
+      return '/splash';
     }
   },
   // refreshListenable: GoRouterRefreshStream(

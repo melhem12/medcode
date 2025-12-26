@@ -23,6 +23,7 @@ class CodeListBloc extends Bloc<CodeListEvent, CodeListState> {
       page: event.page,
       search: event.search,
       category: event.category,
+      contentId: event.contentId,
     );
     result.fold(
       (failure) => emit(CodeListError(failure.message)),

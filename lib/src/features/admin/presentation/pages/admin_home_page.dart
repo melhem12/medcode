@@ -24,6 +24,15 @@ class AdminHomePage extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        leading: BackButton(
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/contents');
+            }
+          },
+        ),
         actions: [
           BlocBuilder<AuthBloc, AuthState>(
             builder: (context, authState) {

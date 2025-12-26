@@ -1,34 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../core/utils/user_type_rules.dart';
 import '../../presentation/cubit/admin_speciality_hospital_cubit.dart';
+import '../../presentation/cubit/hospitals_cubit.dart';
 import '../../../../app/di/injection_container.dart' as di;
-// TODO: Uncomment when HospitalsCubit is implemented
-// import '../../../auth/presentation/cubit/hospitals_cubit.dart';
-
-// Temporary stub classes until HospitalsCubit is implemented
-class HospitalsCubit extends Cubit<HospitalsState> {
-  HospitalsCubit() : super(HospitalsInitial());
-  void loadHospitals() {}
-}
-
-abstract class HospitalsState {}
-
-class HospitalsInitial extends HospitalsState {}
-
-class HospitalsLoading extends HospitalsState {}
-
-class HospitalsError extends HospitalsState {
-  final String message;
-  HospitalsError(this.message);
-}
-
-class HospitalsLoaded extends HospitalsState {
-  final List<dynamic> hospitals;
-  HospitalsLoaded(this.hospitals);
-}
 
 class ManageHospitalsPage extends StatefulWidget {
   const ManageHospitalsPage({super.key});
@@ -41,10 +19,9 @@ class _ManageHospitalsPageState extends State<ManageHospitalsPage> {
   @override
   void initState() {
     super.initState();
-    context.read<HospitalsCubit>().loadHospitals();
   }
 
-  void _openForm({int? id, String? name}) {
+  void _openForm(BuildContext providerContext, {int? id, String? name}) {
     final controller = TextEditingController(text: name ?? '');
     showDialog(
       context: context,
@@ -63,17 +40,16 @@ class _ManageHospitalsPageState extends State<ManageHospitalsPage> {
             onPressed: () async {
               if (controller.text.trim().isEmpty) return;
               if (id == null) {
-                await context
+                await providerContext
                     .read<AdminSpecialityHospitalCubit>()
                     .addHospital(controller.text.trim());
               } else {
-                await context
+                await providerContext
                     .read<AdminSpecialityHospitalCubit>()
                     .editHospital(id, controller.text.trim());
               }
               if (mounted) {
                 Navigator.of(ctx).pop();
-                context.read<HospitalsCubit>().loadHospitals();
               }
             },
             child: Text(id == null ? 'Create' : 'Update'),
@@ -83,7 +59,7 @@ class _ManageHospitalsPageState extends State<ManageHospitalsPage> {
     );
   }
 
-  void _confirmDelete(int id) {
+  void _confirmDelete(BuildContext providerContext, int id) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -96,10 +72,9 @@ class _ManageHospitalsPageState extends State<ManageHospitalsPage> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await context.read<AdminSpecialityHospitalCubit>().removeHospital(id);
+              await providerContext.read<AdminSpecialityHospitalCubit>().removeHospital(id);
               if (mounted) {
                 Navigator.of(ctx).pop();
-                context.read<HospitalsCubit>().loadHospitals();
               }
             },
             child: const Text('Delete'),
@@ -122,15 +97,25 @@ class _ManageHospitalsPageState extends State<ManageHospitalsPage> {
     }
 
     return BlocProvider<HospitalsCubit>(
-      create: (_) => HospitalsCubit(),
+      create: (_) => di.sl<HospitalsCubit>(),
       child: BlocProvider<AdminSpecialityHospitalCubit>(
         create: (_) => di.sl<AdminSpecialityHospitalCubit>(),
-        child: Scaffold(
+        child: Builder(
+          builder: (providerContext) => Scaffold(
       appBar: AppBar(
         title: const Text('Manage Hospitals'),
+        leading: BackButton(
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/admin/home');
+            }
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _openForm(),
+        onPressed: () => _openForm(providerContext),
         child: const Icon(Icons.add),
       ),
       body: BlocConsumer<AdminSpecialityHospitalCubit, AdminSpecialityHospitalState>(
@@ -147,12 +132,23 @@ class _ManageHospitalsPageState extends State<ManageHospitalsPage> {
                     : (state as AdminSpecialityHospitalDeleted).message),
               ),
             );
+            // Reload hospitals after successful operation
+            context.read<HospitalsCubit>().loadHospitals();
           }
         },
         builder: (context, crudState) {
           return BlocBuilder<HospitalsCubit, HospitalsState>(
             builder: (context, state) {
-              if (state is HospitalsLoading || state is HospitalsInitial) {
+              // Load hospitals when state is initial
+              if (state is HospitalsInitial) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    context.read<HospitalsCubit>().loadHospitals();
+                  }
+                });
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is HospitalsLoading) {
                 return const Center(child: CircularProgressIndicator());
               }
               if (state is HospitalsError) {
@@ -185,11 +181,11 @@ class _ManageHospitalsPageState extends State<ManageHospitalsPage> {
                             IconButton(
                               icon: const Icon(Icons.edit_outlined),
                               onPressed: () =>
-                                  _openForm(id: item.id, name: item.name),
+                                  _openForm(context, id: item.id, name: item.name),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete_outline),
-                              onPressed: () => _confirmDelete(item.id),
+                              onPressed: () => _confirmDelete(context, item.id),
                             ),
                           ],
                         ),
@@ -203,6 +199,7 @@ class _ManageHospitalsPageState extends State<ManageHospitalsPage> {
           );
         },
       ),
+          ),
         ),
       ),
     );

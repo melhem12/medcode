@@ -1,34 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../../core/utils/user_type_rules.dart';
 import '../../presentation/cubit/admin_speciality_hospital_cubit.dart';
+import '../../presentation/cubit/specialities_cubit.dart';
 import '../../../../app/di/injection_container.dart' as di;
-// TODO: Uncomment when SpecialitiesCubit is implemented
-// import '../../../auth/presentation/cubit/specialities_cubit.dart';
-
-// Temporary stub classes until SpecialitiesCubit is implemented
-class SpecialitiesCubit extends Cubit<SpecialitiesState> {
-  SpecialitiesCubit() : super(SpecialitiesInitial());
-  void loadSpecialities() {}
-}
-
-abstract class SpecialitiesState {}
-
-class SpecialitiesInitial extends SpecialitiesState {}
-
-class SpecialitiesLoading extends SpecialitiesState {}
-
-class SpecialitiesError extends SpecialitiesState {
-  final String message;
-  SpecialitiesError(this.message);
-}
-
-class SpecialitiesLoaded extends SpecialitiesState {
-  final List<dynamic> specialities;
-  SpecialitiesLoaded(this.specialities);
-}
 
 class ManageSpecialitiesPage extends StatefulWidget {
   const ManageSpecialitiesPage({super.key});
@@ -41,10 +19,9 @@ class _ManageSpecialitiesPageState extends State<ManageSpecialitiesPage> {
   @override
   void initState() {
     super.initState();
-    context.read<SpecialitiesCubit>().loadSpecialities();
   }
 
-  void _openForm({int? id, String? name}) {
+  void _openForm(BuildContext providerContext, {int? id, String? name}) {
     final controller = TextEditingController(text: name ?? '');
     showDialog(
       context: context,
@@ -63,17 +40,16 @@ class _ManageSpecialitiesPageState extends State<ManageSpecialitiesPage> {
             onPressed: () async {
               if (controller.text.trim().isEmpty) return;
               if (id == null) {
-                await context
+                await providerContext
                     .read<AdminSpecialityHospitalCubit>()
                     .addSpeciality(controller.text.trim());
               } else {
-                await context
+                await providerContext
                     .read<AdminSpecialityHospitalCubit>()
                     .editSpeciality(id, controller.text.trim());
               }
               if (mounted) {
                 Navigator.of(ctx).pop();
-                context.read<SpecialitiesCubit>().loadSpecialities();
               }
             },
             child: Text(id == null ? 'Create' : 'Update'),
@@ -83,7 +59,7 @@ class _ManageSpecialitiesPageState extends State<ManageSpecialitiesPage> {
     );
   }
 
-  void _confirmDelete(int id) {
+  void _confirmDelete(BuildContext providerContext, int id) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -96,10 +72,9 @@ class _ManageSpecialitiesPageState extends State<ManageSpecialitiesPage> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await context.read<AdminSpecialityHospitalCubit>().removeSpeciality(id);
+              await providerContext.read<AdminSpecialityHospitalCubit>().removeSpeciality(id);
               if (mounted) {
                 Navigator.of(ctx).pop();
-                context.read<SpecialitiesCubit>().loadSpecialities();
               }
             },
             child: const Text('Delete'),
@@ -122,15 +97,25 @@ class _ManageSpecialitiesPageState extends State<ManageSpecialitiesPage> {
     }
 
     return BlocProvider<SpecialitiesCubit>(
-      create: (_) => SpecialitiesCubit(),
+      create: (_) => di.sl<SpecialitiesCubit>(),
       child: BlocProvider<AdminSpecialityHospitalCubit>(
         create: (_) => di.sl<AdminSpecialityHospitalCubit>(),
-        child: Scaffold(
+        child: Builder(
+          builder: (providerContext) => Scaffold(
       appBar: AppBar(
         title: const Text('Manage Specialities'),
+        leading: BackButton(
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/admin/home');
+            }
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _openForm(),
+        onPressed: () => _openForm(providerContext),
         child: const Icon(Icons.add),
       ),
       body: BlocConsumer<AdminSpecialityHospitalCubit, AdminSpecialityHospitalState>(
@@ -147,12 +132,23 @@ class _ManageSpecialitiesPageState extends State<ManageSpecialitiesPage> {
                     : (state as AdminSpecialityHospitalDeleted).message),
               ),
             );
+            // Reload specialities after successful operation
+            context.read<SpecialitiesCubit>().loadSpecialities();
           }
         },
         builder: (context, crudState) {
           return BlocBuilder<SpecialitiesCubit, SpecialitiesState>(
             builder: (context, state) {
-              if (state is SpecialitiesLoading || state is SpecialitiesInitial) {
+              // Load specialities when state is initial
+              if (state is SpecialitiesInitial) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    context.read<SpecialitiesCubit>().loadSpecialities();
+                  }
+                });
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (state is SpecialitiesLoading) {
                 return const Center(child: CircularProgressIndicator());
               }
               if (state is SpecialitiesError) {
@@ -185,11 +181,11 @@ class _ManageSpecialitiesPageState extends State<ManageSpecialitiesPage> {
                             IconButton(
                               icon: const Icon(Icons.edit_outlined),
                               onPressed: () =>
-                                  _openForm(id: item.id, name: item.name),
+                                  _openForm(context, id: item.id, name: item.name),
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete_outline),
-                              onPressed: () => _confirmDelete(item.id),
+                              onPressed: () => _confirmDelete(context, item.id),
                             ),
                           ],
                         ),
@@ -203,6 +199,7 @@ class _ManageSpecialitiesPageState extends State<ManageSpecialitiesPage> {
           );
         },
       ),
+          ),
         ),
       ),
     );
