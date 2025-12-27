@@ -9,8 +9,26 @@ import '../../../contents/domain/entities/content_node.dart';
 import '../cubit/admin_content_crud_cubit.dart';
 import '../../../../app/di/injection_container.dart' as di;
 
-class ManageContentsPage extends StatelessWidget {
+class ManageContentsPage extends StatefulWidget {
   const ManageContentsPage({super.key});
+
+  @override
+  State<ManageContentsPage> createState() => _ManageContentsPageState();
+}
+
+class _ManageContentsPageState extends State<ManageContentsPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Ensure contents load when landing on this page so empty state can render.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final contentsCubit = context.read<ContentsCubit>();
+      final state = contentsCubit.state;
+      if (state is! ContentsLoaded) {
+        contentsCubit.fetchContents();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
