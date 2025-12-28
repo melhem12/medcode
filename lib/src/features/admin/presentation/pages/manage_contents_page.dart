@@ -202,12 +202,6 @@ class _ManageContentsPageState extends State<ManageContentsPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text('No contents available'),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => _showContentForm(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Add Content'),
-            ),
           ],
         ),
       );

@@ -31,7 +31,12 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     emit(UserLoading());
     final result = await getProfileUseCase();
     result.fold(
-      (failure) => emit(UserError(failure.message)),
+      (failure) {
+        // Log profile load failure for debugging
+        // ignore: avoid_print
+        print('Profile load failed: ${failure.message}');
+        emit(UserError(failure.message));
+      },
       (user) => emit(UserLoaded(user)),
     );
   }
@@ -83,4 +88,3 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     );
   }
 }
-

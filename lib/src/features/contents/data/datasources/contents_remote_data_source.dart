@@ -73,6 +73,9 @@ class ContentsRemoteDataSourceImpl implements ContentsRemoteDataSource {
   Future<ContentNode> createContent(Map<String, dynamic> data) async {
     try {
       final response = await dioClient.dio.post('/admin/contents', data: data);
+      // Log the response for debugging "add content"
+      // ignore: avoid_print
+      print('createContent response: ${response.data}');
       final responseData = response.data as Map<String, dynamic>;
       if (responseData['status'] != 'success') {
         throw ApiException(responseData['message'] as String? ?? 'Failed to create content');
@@ -98,6 +101,9 @@ class ContentsRemoteDataSourceImpl implements ContentsRemoteDataSource {
   Future<ContentNode> updateContent(String id, Map<String, dynamic> data) async {
     try {
       final response = await dioClient.dio.put('/admin/contents/$id', data: data);
+      // Log update response for debugging
+      // ignore: avoid_print
+      print('updateContent response: ${response.data}');
       final responseData = response.data as Map<String, dynamic>;
       if (responseData['status'] != 'success') {
         throw ApiException(responseData['message'] as String? ?? 'Failed to update content');
@@ -143,5 +149,4 @@ class ContentsRemoteDataSourceImpl implements ContentsRemoteDataSource {
     }
   }
 }
-
 

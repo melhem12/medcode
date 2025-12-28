@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/app_config.dart';
 import '../error/exceptions.dart';
@@ -57,6 +58,10 @@ class DioClient {
   }
 
   Exception _handleError(DioException error) {
+    final method = error.requestOptions.method;
+    final uri = error.requestOptions.uri;
+    final status = error.response?.statusCode;
+
     if (error.response != null) {
       final data = error.response!.data;
       if (data is Map<String, dynamic>) {
@@ -75,12 +80,18 @@ class DioClient {
           });
         }
         
+        debugPrint(
+          'API error [$status] $method $uri -> $message',
+        );
         return ApiException(
           message,
           statusCode: error.response!.statusCode,
           fieldErrors: parsedFieldErrors,
         );
       }
+      debugPrint(
+        'API error [$status] $method $uri -> Server error: ${error.response!.statusCode}',
+      );
       return ApiException(
         'Server error: ${error.response!.statusCode}',
         statusCode: error.response!.statusCode,
@@ -88,10 +99,13 @@ class DioClient {
     } else if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.receiveTimeout ||
         error.type == DioExceptionType.sendTimeout) {
+      debugPrint('Network timeout $method $uri');
       return NetworkException('Connection timeout. Please check your internet connection.');
     } else if (error.type == DioExceptionType.connectionError) {
+      debugPrint('Network connection error $method $uri -> ${error.message}');
       return NetworkException('No internet connection. Please check your network settings.');
     }
+    debugPrint('Unexpected error $method $uri -> ${error.message}');
     return NetworkException(error.message ?? 'An unexpected error occurred');
   }
 

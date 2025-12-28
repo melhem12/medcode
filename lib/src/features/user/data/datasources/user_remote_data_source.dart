@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../../auth/domain/entities/user.dart';
 import '../../../auth/data/models/user_model.dart';
 import '../../../../core/network/dio_client.dart';
@@ -36,9 +37,20 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
         return UserModel.fromJson(data);
       }
     } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final responseData = e.response?.data;
+      final uri = e.requestOptions.uri;
+      final method = e.requestOptions.method;
+      final authHeader = e.requestOptions.headers['Authorization'];
+      final message = (responseData is Map<String, dynamic> && responseData['message'] is String)
+          ? responseData['message'] as String
+          : (e.message ?? 'Failed to load profile');
+      debugPrint(
+        'getProfile failed [$status] $method $uri -> $message | auth: $authHeader | data: $responseData',
+      );
       throw e.error is Exception
           ? e.error as Exception
-          : ApiException('Failed to load profile');
+          : ApiException(message, statusCode: status);
     }
   }
 
@@ -63,9 +75,20 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
         return UserModel.fromJson(data);
       }
     } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final responseData = e.response?.data;
+      final uri = e.requestOptions.uri;
+      final method = e.requestOptions.method;
+      final authHeader = e.requestOptions.headers['Authorization'];
+      final message = (responseData is Map<String, dynamic> && responseData['message'] is String)
+          ? responseData['message'] as String
+          : (e.message ?? 'Failed to update profile');
+      debugPrint(
+        'updateProfile failed [$status] $method $uri -> $message | auth: $authHeader | data: $responseData',
+      );
       throw e.error is Exception
           ? e.error as Exception
-          : ApiException('Failed to update profile');
+          : ApiException(message, statusCode: status);
     }
   }
 
@@ -85,5 +108,3 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
     }
   }
 }
-
-

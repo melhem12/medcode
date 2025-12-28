@@ -28,3 +28,4 @@ class HospitalsLoaded extends HospitalsState {
 }
 
 
+
