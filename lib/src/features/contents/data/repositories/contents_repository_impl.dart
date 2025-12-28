@@ -4,21 +4,28 @@ import '../../domain/entities/content_node.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/error/exceptions.dart';
 import '../datasources/contents_remote_data_source.dart';
+import '../datasources/contents_local_data_source.dart';
 import '../../../medical_codes/domain/entities/import_result.dart';
 
 class ContentsRepositoryImpl implements ContentsRepository {
   final ContentsRemoteDataSource remoteDataSource;
+  final ContentsLocalDataSource localDataSource;
 
-  ContentsRepositoryImpl(this.remoteDataSource);
+  ContentsRepositoryImpl(this.remoteDataSource, this.localDataSource);
 
   @override
   Future<Either<Failure, List<ContentNode>>> getContents() async {
     try {
       final contents = await remoteDataSource.getContents();
+      await localDataSource.cacheContents(contents);
       return Right(contents);
     } on ApiException catch (e) {
       return Left(ServerFailure(e.message, statusCode: e.statusCode));
     } on NetworkException catch (e) {
+      final cached = await localDataSource.getCachedContents();
+      if (cached.isNotEmpty) {
+        return Right(cached);
+      }
       return Left(NetworkFailure(e.message));
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -90,5 +97,4 @@ class ContentsRepositoryImpl implements ContentsRepository {
     }
   }
 }
-
 

@@ -12,6 +12,7 @@ import '../../features/auth/domain/usecases/logout_usecase.dart';
 import '../../features/auth/domain/usecases/check_auth_status_usecase.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/medical_codes/data/datasources/medical_codes_remote_data_source.dart';
+import '../../features/medical_codes/data/datasources/medical_codes_local_data_source.dart';
 import '../../features/medical_codes/data/repositories/medical_codes_repository_impl.dart';
 import '../../features/medical_codes/domain/repositories/medical_codes_repository.dart';
 import '../../features/medical_codes/domain/usecases/get_medical_codes_usecase.dart';
@@ -23,6 +24,7 @@ import '../../features/medical_codes/presentation/bloc/code_detail_bloc.dart';
 import '../../features/medical_codes/presentation/cubit/admin_import_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_medical_codes_list_cubit.dart';
 import '../../features/contents/data/datasources/contents_remote_data_source.dart';
+import '../../features/contents/data/datasources/contents_local_data_source.dart';
 import '../../features/contents/data/repositories/contents_repository_impl.dart';
 import '../../features/contents/domain/repositories/contents_repository.dart';
 import '../../features/contents/domain/usecases/get_contents_usecase.dart';
@@ -109,10 +111,16 @@ Future<void> init() async {
   sl.registerLazySingleton<MedicalCodesRemoteDataSource>(
     () => MedicalCodesRemoteDataSourceImpl(sl<DioClient>()),
   );
+  sl.registerLazySingleton<MedicalCodesLocalDataSource>(
+    () => MedicalCodesLocalDataSourceImpl(sl<SharedPreferences>()),
+  );
 
   // Medical Codes - Repository
   sl.registerLazySingleton<MedicalCodesRepository>(
-    () => MedicalCodesRepositoryImpl(sl<MedicalCodesRemoteDataSource>()),
+    () => MedicalCodesRepositoryImpl(
+      sl<MedicalCodesRemoteDataSource>(),
+      sl<MedicalCodesLocalDataSource>(),
+    ),
   );
 
   // Medical Codes - Use Cases
@@ -157,10 +165,16 @@ Future<void> init() async {
   sl.registerLazySingleton<ContentsRemoteDataSource>(
     () => ContentsRemoteDataSourceImpl(sl<DioClient>()),
   );
+  sl.registerLazySingleton<ContentsLocalDataSource>(
+    () => ContentsLocalDataSourceImpl(sl<SharedPreferences>()),
+  );
 
   // Contents - Repository
   sl.registerLazySingleton<ContentsRepository>(
-    () => ContentsRepositoryImpl(sl<ContentsRemoteDataSource>()),
+    () => ContentsRepositoryImpl(
+      sl<ContentsRemoteDataSource>(),
+      sl<ContentsLocalDataSource>(),
+    ),
   );
 
   // Contents - Use Cases

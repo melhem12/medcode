@@ -13,20 +13,52 @@ class CodeListLoading extends CodeListState {}
 
 class CodeListLoaded extends CodeListState {
   final List<MedicalCode> codes;
+  final int page;
+  final bool hasMore;
+  final String? search;
+  final String? contentId;
 
-  const CodeListLoaded(this.codes);
+  const CodeListLoaded({
+    required this.codes,
+    required this.page,
+    required this.hasMore,
+    this.search,
+    this.contentId,
+  });
 
   @override
-  List<Object> get props => [codes];
+  List<Object> get props => [
+        codes,
+        page,
+        hasMore,
+        search ?? '',
+        contentId ?? '',
+      ];
 }
 
 class CodeListLoadingMore extends CodeListState {
   final List<MedicalCode> codes;
+  final int page;
+  final bool hasMore;
+  final String? search;
+  final String? contentId;
 
-  const CodeListLoadingMore(this.codes);
+  const CodeListLoadingMore({
+    required this.codes,
+    required this.page,
+    required this.hasMore,
+    this.search,
+    this.contentId,
+  });
 
   @override
-  List<Object> get props => [codes];
+  List<Object> get props => [
+        codes,
+        page,
+        hasMore,
+        search ?? '',
+        contentId ?? '',
+      ];
 }
 
 class CodeListError extends CodeListState {
@@ -37,7 +69,6 @@ class CodeListError extends CodeListState {
   @override
   List<Object> get props => [message];
 }
-
 
 
 

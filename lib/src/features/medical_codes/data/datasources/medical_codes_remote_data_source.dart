@@ -34,7 +34,10 @@ class MedicalCodesRemoteDataSourceImpl implements MedicalCodesRemoteDataSource {
     String? contentId,
   }) async {
     try {
-      final queryParams = <String, dynamic>{'page': page};
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'per_page': 20,
+      };
       if (search != null && search.isNotEmpty) {
         queryParams['search'] = search;
       }
@@ -184,5 +187,4 @@ class MedicalCodesRemoteDataSourceImpl implements MedicalCodesRemoteDataSource {
     }
   }
 }
-
 

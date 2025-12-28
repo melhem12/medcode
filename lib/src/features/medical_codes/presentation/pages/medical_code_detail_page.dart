@@ -9,6 +9,7 @@ import '../../domain/entities/medical_code.dart';
 import '../bloc/code_detail_bloc.dart';
 import '../../../favorites/presentation/cubit/favorites_cubit.dart';
 import '../../../favorites/presentation/cubit/favorites_state.dart';
+import '../../data/datasources/medical_codes_local_data_source.dart';
 
 class MedicalCodeDetailPage extends StatelessWidget {
   final String codeId;
@@ -127,6 +128,8 @@ class MedicalCodeDetailPage extends StatelessWidget {
                           children: [
                             if (code.category != null)
                               _buildTag(code.category!),
+                            if (code.bodySystem != null)
+                              _buildTag(code.bodySystem!),
                             if (code.pageMarker != null)
                               _buildTag('Page ${code.pageMarker}'),
                           ],
@@ -208,7 +211,7 @@ class MedicalCodeDetailPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _buildRelatedPlaceholder(context),
+                  _buildRelatedList(context, code),
                 ],
               ),
             ),
@@ -222,14 +225,14 @@ class MedicalCodeDetailPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFB2EBF2),
+        color: const Color(0xFFE6F7FA),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color: Color(0xFF0F1B53),
-          fontWeight: FontWeight.w600,
+          color: Color(0xFF0F9CB5),
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -246,7 +249,7 @@ class MedicalCodeDetailPage extends StatelessWidget {
       child: Ink(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0FB4D4), Color(0xFF0D9BB5)],
+            colors: [Color(0xFF21B9C7), Color(0xFF0F9CB5)],
           ),
           borderRadius: BorderRadius.all(Radius.circular(30)),
         ),
@@ -276,18 +279,19 @@ class MedicalCodeDetailPage extends StatelessWidget {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    const accent = Color(0xFF0F9CB5);
     return OutlinedButton.icon(
       onPressed: onTap,
-      icon: Icon(icon, color: const Color(0xFF0D9BB5)),
+      icon: Icon(icon, color: accent),
       label: Text(
         label,
         style: const TextStyle(
-          color: Color(0xFF0D9BB5),
+          color: accent,
           fontWeight: FontWeight.w700,
         ),
       ),
       style: OutlinedButton.styleFrom(
-        side: const BorderSide(color: Color(0xFF0D9BB5)),
+        side: const BorderSide(color: accent),
         padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
@@ -318,6 +322,92 @@ class MedicalCodeDetailPage extends StatelessWidget {
           fontSize: 15,
         ),
       ),
+    );
+  }
+
+  Widget _buildRelatedList(BuildContext context, MedicalCode code) {
+    final localDataSource = di.sl<MedicalCodesLocalDataSource>();
+    return FutureBuilder<List<MedicalCode>>(
+      future: localDataSource.getCachedMedicalCodes(),
+      builder: (context, snapshot) {
+        final cached = snapshot.data ?? [];
+        final related = cached
+            .where((item) =>
+                item.id != code.id &&
+                (code.category != null && item.category == code.category))
+            .take(3)
+            .toList();
+
+        if (related.isEmpty) {
+          return _buildRelatedPlaceholder(context);
+        }
+
+        return Column(
+          children: related
+              .map(
+                (item) => Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.code,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF1A237E),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.description,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF4A5568),
+                              ),
+                            ),
+                            if (item.pageMarker != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Page ${item.pageMarker}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFFFFA45B),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right,
+                        color: Color(0xFF0D9BB5),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      },
     );
   }
 

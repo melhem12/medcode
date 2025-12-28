@@ -13,6 +13,7 @@ class AdminImportPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return BlocProvider<AdminImportCubit>(
       create: (_) => di.sl<AdminImportCubit>(),
       child: Scaffold(
@@ -32,22 +33,23 @@ class AdminImportPage extends StatelessWidget {
         body: BlocConsumer<AdminImportCubit, AdminImportState>(
           listener: (context, state) {
             if (state is AdminImportSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Import Complete'),
                   content: Text(
-                    'Import successful!\n'
                     'Imported: ${state.result.imported}\n'
                     'Updated: ${state.result.updated}\n'
                     'Skipped: ${state.result.skipped}',
                   ),
-                  duration: const Duration(seconds: 5),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ],
                 ),
               );
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/admin/home');
-              }
             } else if (state is AdminImportError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -69,35 +71,66 @@ class AdminImportPage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.upload_file,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.primary,
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.upload_file,
+                      size: 56,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text(
                     'Import Medical Codes',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Select an Excel file to import medical codes',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: theme.cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: theme.dividerColor),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.description_outlined, color: theme.colorScheme.primary),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text('Supported: .xlsx, .xls'),
                         ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 32),
-                  ElevatedButton.icon(
-                    onPressed: () => _pickAndImportFile(context),
-                    icon: const Icon(Icons.file_upload),
-                    label: const Text('Select File'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _pickAndImportFile(context),
+                      icon: const Icon(Icons.file_upload),
+                      label: const Text('Select File'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
                   ),

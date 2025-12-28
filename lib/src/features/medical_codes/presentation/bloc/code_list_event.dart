@@ -24,4 +24,7 @@ class LoadMedicalCodesEvent extends CodeListEvent {
   List<Object> get props => [page, search ?? '', category ?? '', contentId ?? ''];
 }
 
+class LoadMoreMedicalCodesEvent extends CodeListEvent {
+  const LoadMoreMedicalCodesEvent();
+}
 

@@ -16,6 +16,7 @@ class MedicalCodesListPage extends StatefulWidget {
 
 class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -31,25 +32,35 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
         );
       }
     });
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _performSearch(String query) {
+    final trimmed = query.trim();
     // Get contentId from current route if available
     final uri = GoRouterState.of(context).uri;
     final contentId = uri.queryParameters['contentId'];
     
     context.read<CodeListBloc>().add(
           LoadMedicalCodesEvent(
-            search: query.isEmpty ? null : query,
+            search: trimmed.isEmpty ? null : trimmed,
             contentId: contentId,
           ),
         );
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      context.read<CodeListBloc>().add(const LoadMoreMedicalCodesEvent());
+    }
   }
 
   @override
@@ -112,10 +123,11 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
 
             final recentCodes = codes.take(3).toList();
             final popularCodes = codes.length > 3
-                ? codes.skip(3).take(3).toList()
+                ? codes.sublist(3)
                 : <dynamic>[];
 
             return SingleChildScrollView(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,6 +150,11 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
                     _buildEmptyCard('No popular codes available')
                   else
                     ...popularCodes.map((code) => _buildCodeCard(context, code)),
+                  if (state is CodeListLoadingMore)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
                 ],
               ),
             );
@@ -172,7 +189,7 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
             onPressed: () => _performSearch(_searchController.text),
           ),
         ),
-        onChanged: _performSearch,
+        onSubmitted: _performSearch,
       ),
     );
   }

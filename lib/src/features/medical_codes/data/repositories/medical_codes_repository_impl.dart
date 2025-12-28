@@ -5,11 +5,13 @@ import '../../domain/entities/import_result.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/error/exceptions.dart';
 import '../datasources/medical_codes_remote_data_source.dart';
+import '../datasources/medical_codes_local_data_source.dart';
 
 class MedicalCodesRepositoryImpl implements MedicalCodesRepository {
   final MedicalCodesRemoteDataSource remoteDataSource;
+  final MedicalCodesLocalDataSource localDataSource;
 
-  MedicalCodesRepositoryImpl(this.remoteDataSource);
+  MedicalCodesRepositoryImpl(this.remoteDataSource, this.localDataSource);
 
   @override
   Future<Either<Failure, List<MedicalCode>>> getMedicalCodes({
@@ -25,10 +27,32 @@ class MedicalCodesRepositoryImpl implements MedicalCodesRepository {
         category: category,
         contentId: contentId,
       );
+      await localDataSource.cacheMedicalCodes(codes);
       return Right(codes);
     } on ApiException catch (e) {
       return Left(ServerFailure(e.message, statusCode: e.statusCode));
     } on NetworkException catch (e) {
+      var cached = await localDataSource.getCachedMedicalCodes();
+      if (cached.isNotEmpty) {
+        if (search != null && search.isNotEmpty) {
+          final q = search.toLowerCase();
+          cached = cached.where((code) {
+            final inCode = code.code.toLowerCase().contains(q);
+            final inDesc = code.description.toLowerCase().contains(q);
+            final inCat = code.category?.toLowerCase().contains(q) ?? false;
+            return inCode || inDesc || inCat;
+          }).toList();
+        }
+        if (category != null && category.isNotEmpty) {
+          cached = cached.where((code) => code.category == category).toList();
+        }
+        if (contentId != null && contentId.isNotEmpty) {
+          cached = cached
+              .where((code) => code.contentId?.toString() == contentId)
+              .toList();
+        }
+        return Right(cached);
+      }
       return Left(NetworkFailure(e.message));
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -43,6 +67,11 @@ class MedicalCodesRepositoryImpl implements MedicalCodesRepository {
     } on ApiException catch (e) {
       return Left(ServerFailure(e.message, statusCode: e.statusCode));
     } on NetworkException catch (e) {
+      final cached = await localDataSource.getCachedMedicalCodes();
+      final match = cached.where((item) => item.id == id).toList();
+      if (match.isNotEmpty) {
+        return Right(match.first);
+      }
       return Left(NetworkFailure(e.message));
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -117,5 +146,4 @@ class MedicalCodesRepositoryImpl implements MedicalCodesRepository {
     }
   }
 }
-
 
