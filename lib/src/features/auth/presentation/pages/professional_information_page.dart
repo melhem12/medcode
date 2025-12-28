@@ -208,7 +208,13 @@ class _ProfessionalInformationPageState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final baseTextColor = theme.textTheme.bodyMedium?.color ?? Colors.black87;
+    final cardFill = theme.cardColor;
+
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -218,15 +224,15 @@ class _ProfessionalInformationPageState
               'assets/icons/logo.png',
               width: 100,
               height: 100,
+              color: isDark ? Colors.white : null,
             ),
             const SizedBox(height: 32),
             // Title
-            const Text(
+            Text(
               'Professional Information',
-              style: TextStyle(
-                fontSize: 28,
+              style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: baseTextColor,
               ),
               textAlign: TextAlign.center,
             ),
@@ -234,9 +240,8 @@ class _ProfessionalInformationPageState
             // Subtitle
             Text(
               'Please provide your ${_getUserTypeLabel().toLowerCase()} details',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
               ),
               textAlign: TextAlign.center,
             ),
@@ -254,10 +259,10 @@ class _ProfessionalInformationPageState
                       if (_needsLicense()) ...[
                         Text(
                           'License Number${_isLicenseMandatory() ? ' *' : ' (Optional)'}',
-                          style: const TextStyle(
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: baseTextColor,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -271,8 +276,8 @@ class _ProfessionalInformationPageState
                               : null,
                           decoration: InputDecoration(
                             hintText: 'MD-2025-12345',
-                            hintStyle: TextStyle(
-                              color: Colors.grey.shade400,
+                            hintStyle: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.hintColor,
                             ),
                             prefixIcon: Icon(
                               Icons.badge_outlined,
@@ -281,14 +286,14 @@ class _ProfessionalInformationPageState
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
                                 width: 1,
                               ),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(
-                                color: Colors.grey.shade300,
+                                color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
                                 width: 1,
                               ),
                             ),
@@ -304,7 +309,7 @@ class _ProfessionalInformationPageState
                               vertical: 16,
                             ),
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: cardFill,
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -313,10 +318,10 @@ class _ProfessionalInformationPageState
                       if (_needsSpecialty()) ...[
                         Text(
                           'Specialty${_isSpecialtyMandatory() ? ' *' : ' (Optional)'}',
-                          style: const TextStyle(
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: baseTextColor,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -352,11 +357,11 @@ class _ProfessionalInformationPageState
                         else
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: cardFill,
                               border: Border.all(
                                 color: _selectedSpeciality != null
                                     ? const Color(0xFF30BEC6)
-                                    : Colors.grey.shade300,
+                                    : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                                 width: _selectedSpeciality != null ? 2 : 1,
                               ),
                               borderRadius: BorderRadius.circular(12),
@@ -365,8 +370,8 @@ class _ProfessionalInformationPageState
                               value: _selectedSpeciality,
                               decoration: InputDecoration(
                                 hintText: 'Select Specialty',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
+                                hintStyle: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.hintColor,
                                 ),
                                 prefixIcon: Icon(
                                   Icons.medical_services_outlined,
@@ -378,7 +383,7 @@ class _ProfessionalInformationPageState
                                   vertical: 16,
                                 ),
                                 filled: true,
-                                fillColor: Colors.white,
+                                fillColor: cardFill,
                               ),
                               items: _specialities.map((speciality) {
                                 return DropdownMenuItem<Speciality>(
@@ -407,10 +412,10 @@ class _ProfessionalInformationPageState
                       if (_needsHospitalId()) ...[
                         Text(
                           'Hospital *',
-                          style: const TextStyle(
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: baseTextColor,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -446,11 +451,11 @@ class _ProfessionalInformationPageState
                         else
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: cardFill,
                               border: Border.all(
                                 color: _selectedHospital != null
                                     ? const Color(0xFF30BEC6)
-                                    : Colors.grey.shade300,
+                                    : (isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                                 width: _selectedHospital != null ? 2 : 1,
                               ),
                               borderRadius: BorderRadius.circular(12),
@@ -459,8 +464,8 @@ class _ProfessionalInformationPageState
                               value: _selectedHospital,
                               decoration: InputDecoration(
                                 hintText: 'Select Hospital',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
+                                hintStyle: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.hintColor,
                                 ),
                                 prefixIcon: Icon(
                                   Icons.local_hospital_outlined,
@@ -472,7 +477,7 @@ class _ProfessionalInformationPageState
                                   vertical: 16,
                                 ),
                                 filled: true,
-                                fillColor: Colors.white,
+                                fillColor: cardFill,
                               ),
                               items: _hospitals.map((hospital) {
                                 return DropdownMenuItem<Hospital>(

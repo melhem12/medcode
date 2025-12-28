@@ -25,38 +25,39 @@ class _AdminSubtypeSelectionPageState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 40),
+            const SizedBox(height: 48),
             // Logo
             Image.asset(
               'assets/icons/logo.png',
-              width: 100,
-              height: 100,
+              width: 88,
+              height: 88,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             // Title
             const Text(
               'Administrative Type',
               style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                fontSize: 30,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1A237E),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             // Subtitle
             Text(
               'Select Your Administrative Role',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 color: Colors.grey.shade600,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 60),
+            const SizedBox(height: 40),
             // Role Selection Cards
             Expanded(
               child: Padding(
@@ -95,24 +96,24 @@ class _AdminSubtypeSelectionPageState
                       const Color(0xFF0891A3),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(30),
                 ),
                 child: ElevatedButton(
                   onPressed: _selectedSubType != null ? _handleNext : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(30),
                     ),
                     disabledBackgroundColor: Colors.grey.shade300,
                   ),
                   child: const Text(
                     'Next',
                     style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
                   ),
@@ -139,54 +140,44 @@ class _AdminSubtypeSelectionPageState
           border: Border.all(
             color: isSelected
                 ? const Color(0xFF30BEC6)
-                : Colors.grey.shade300,
-            width: isSelected ? 3 : 1,
+                : Colors.transparent,
+            width: 2,
           ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF30BEC6).withOpacity(0.3),
-                    blurRadius: 8,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Colors.grey.shade200,
-                    blurRadius: 4,
-                    spreadRadius: 1,
-                  ),
-                ],
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
               iconPath,
-              width: 100,
-              height: 100,
+              width: 84,
+              height: 84,
               errorBuilder: (context, error, stackTrace) {
                 return Icon(
                   value == 'hospital'
                       ? Icons.local_hospital
                       : Icons.medical_services,
-                  size: 80,
+                  size: 64,
                   color: isSelected
                       ? const Color(0xFF30BEC6)
                       : Colors.grey.shade400,
                 );
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               title,
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected
-                    ? const Color(0xFF30BEC6)
-                    : Colors.black87,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF6B7280),
               ),
               textAlign: TextAlign.center,
             ),

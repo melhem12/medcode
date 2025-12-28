@@ -19,8 +19,10 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
   @override
   Future<List<String>> getFavoriteCodeIds() =>
       localDataSource.getFavoriteCodeIds();
-}
 
+  @override
+  Future<void> clearFavorites() => localDataSource.clearFavorites();
+}
 
 
 

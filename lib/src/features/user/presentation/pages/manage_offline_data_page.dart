@@ -3,9 +3,38 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../app/theme/design_tokens.dart';
 import '../cubit/offline_data_cubit.dart';
 import '../cubit/offline_data_state.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
-class ManageOfflineDataPage extends StatelessWidget {
+class ManageOfflineDataPage extends StatefulWidget {
   const ManageOfflineDataPage({super.key});
+
+  @override
+  State<ManageOfflineDataPage> createState() => _ManageOfflineDataPageState();
+}
+
+class _ManageOfflineDataPageState extends State<ManageOfflineDataPage> {
+  bool _isOffline = false;
+  late final Connectivity _connectivity;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectivity = Connectivity();
+    _initConnectivity();
+    _connectivity.onConnectivityChanged.listen((result) {
+      setState(() {
+        _isOffline = result == ConnectivityResult.none;
+      });
+    });
+  }
+
+  Future<void> _initConnectivity() async {
+    final result = await _connectivity.checkConnectivity();
+    if (!mounted) return;
+    setState(() {
+      _isOffline = result == ConnectivityResult.none;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +58,28 @@ class ManageOfflineDataPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (_isOffline)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.wifi_off, color: Colors.orange),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Offline mode: using synchronized data',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   // Sync Status Section
                   _buildSectionHeader('Sync Status'),
                   const SizedBox(height: 12),
@@ -72,6 +123,15 @@ class ManageOfflineDataPage extends StatelessWidget {
                           IconButton(
                             icon: const Icon(Icons.refresh),
                             onPressed: () {
+                              if (_isOffline) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'No internet connection. Using synchronized data.'),
+                                  ),
+                                );
+                                return;
+                              }
                               context.read<OfflineDataCubit>().syncAllData();
                             },
                           ),
@@ -97,6 +157,15 @@ class ManageOfflineDataPage extends StatelessWidget {
                           trailing: IconButton(
                             icon: const Icon(Icons.download),
                             onPressed: () {
+                              if (_isOffline) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'No internet connection. Using existing offline data.'),
+                                  ),
+                                );
+                                return;
+                              }
                               context
                                   .read<OfflineDataCubit>()
                                   .downloadCategory('all');

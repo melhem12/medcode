@@ -11,6 +11,18 @@ class FileExportHelper {
       debugPrint('📁 iOS Export Directory: ${dir.path}');
       return dir;
     } else if (Platform.isAndroid) {
+      // Prefer a top-level /storage/.../medcode directory (outside Android/data)
+      try {
+        final topLevel = Directory('/storage/emulated/0/medcode');
+        if (!await topLevel.exists()) {
+          await topLevel.create(recursive: true);
+          debugPrint('✅ Created top-level export directory: ${topLevel.path}');
+        }
+        debugPrint('📁 Android Export Directory (Top-level): ${topLevel.path}');
+        return topLevel;
+      } catch (e) {
+        debugPrint('⚠️ Could not use top-level export dir: $e');
+      }
       try {
         final externalDir = await getExternalStorageDirectory();
         if (externalDir != null) {
@@ -116,4 +128,3 @@ class FileExportHelper {
     return fullPath;
   }
 }
-

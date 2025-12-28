@@ -164,41 +164,45 @@ class _RegisterPageState extends State<RegisterPage> {
                         size: Size.infinite,
                       ),
                       // Content
-                      Padding(
-                        padding: const EdgeInsets.only(top: 40),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            // Logo
-                            Image.asset(
-                              'assets/icons/logo.png',
-                              width: 100,
-                              height: 100,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(height: 32),
-                            // Welcome text
-                            const Text(
-                              'Create Account',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 40),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // Logo
+                              Image.asset(
+                                'assets/icons/logo.png',
+                                width: 90,
+                                height: 90,
                                 color: Colors.white,
-                                letterSpacing: 0.5,
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            // Subtitle
-                            Text(
-                              'Register as ${_getUserTypeLabel()}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w400,
-                                letterSpacing: 0.3,
+                              const SizedBox(height: 24),
+                              // Title
+                              const Text(
+                                'Create Account',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 10),
+                              // Subtitle
+                              Text(
+                                'Register as ${_getUserTypeLabel()}',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w400,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -606,4 +610,3 @@ class _DotsPatternPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

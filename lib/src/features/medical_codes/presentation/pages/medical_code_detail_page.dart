@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../../../../core/widgets/error_view.dart';
-import '../../../../app/theme/design_tokens.dart';
 import '../../../../app/di/injection_container.dart' as di;
 import '../../domain/entities/medical_code.dart';
 import '../bloc/code_detail_bloc.dart';
@@ -73,9 +72,11 @@ class MedicalCodeDetailPage extends StatelessWidget {
       child: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 100,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black87,
             pinned: true,
-            automaticallyImplyLeading: true,
+            elevation: 0,
+            centerTitle: true,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () {
@@ -86,25 +87,14 @@ class MedicalCodeDetailPage extends StatelessWidget {
                 }
               },
             ),
-            flexibleSpace: FlexibleSpaceBar(
-              title: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    code.code,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (code.category != null)
-                    Text(
-                      code.category!,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                ],
+            title: Text(
+              '${code.code} ${code.category ?? ''}'.trim(),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A237E),
               ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           SliverToBoxAdapter(
@@ -113,105 +103,220 @@ class MedicalCodeDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Description as heading
-                  Text(
-                    code.description,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7FAFD),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          code.description,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F1B53),
+                          ),
                         ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Pill-shaped tags
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if (code.category != null)
-                        Chip(
-                          label: Text(code.category!),
-                          backgroundColor: DesignTokens.primaryLight.withOpacity(0.2),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            if (code.category != null)
+                              _buildTag(code.category!),
+                            if (code.pageMarker != null)
+                              _buildTag('Page ${code.pageMarker}'),
+                          ],
                         ),
-                      if (code.pageMarker != null)
-                        Chip(
-                          label: Text('Page ${code.pageMarker}'),
-                          backgroundColor: DesignTokens.primaryLight.withOpacity(0.2),
+                        const SizedBox(height: 20),
+                        const Divider(),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Description',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F1B53),
+                          ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Description with highlighted code
-                  RichText(
-                    text: TextSpan(
-                      style: Theme.of(context).textTheme.bodyLarge,
-                      children: _buildHighlightedText(
-                        code.description,
-                        code.code,
-                        Theme.of(context).colorScheme.primary,
-                      ),
+                        const SizedBox(height: 8),
+                        RichText(
+                          text: TextSpan(
+                            style: const TextStyle(
+                              fontSize: 16,
+                              height: 1.5,
+                              color: Color(0xFF4A5568),
+                            ),
+                            children: _buildHighlightedText(
+                              code.description,
+                              code.code,
+                              const Color(0xFFFFA45B),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FutureBuilder<bool>(
+                                future: context.read<FavoritesCubit>().isFavorite(code.id),
+                                builder: (context, snapshot) {
+                                  final isFavorite = snapshot.data ?? false;
+                                  return _buildGradientButton(
+                                    label: isFavorite ? 'Bookmarked' : 'Book Mark',
+                                    icon: isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                                    onTap: () => context.read<FavoritesCubit>().toggleFavorite(code.id),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildOutlineButton(
+                                label: 'Copy Code',
+                                icon: Icons.copy_outlined,
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: code.code));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Code copied to clipboard')),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // Action buttons
+                  // Related Codes section
                   Row(
-                    children: [
-                      Expanded(
-                        child: FutureBuilder<bool>(
-                          future: context.read<FavoritesCubit>().isFavorite(code.id),
-                          builder: (context, snapshot) {
-                            final isFavorite = snapshot.data ?? false;
-                            return ElevatedButton.icon(
-                              onPressed: () {
-                                context.read<FavoritesCubit>().toggleFavorite(code.id);
-                              },
-                              icon: Icon(isFavorite ? Icons.bookmark : Icons.bookmark_border),
-                              label: Text(isFavorite ? 'Bookmarked' : 'Book Mark'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.teal,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: code.code));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Code copied to clipboard')),
-                            );
-                          },
-                          icon: const Icon(Icons.copy),
-                          label: const Text('Copy Code'),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
+                    children: const [
+                      Icon(Icons.description_outlined, color: Color(0xFF0F1B53)),
+                      SizedBox(width: 8),
+                      Text(
+                        'Related Codes',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F1B53),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
-
-                  // Related Codes section
-                  Text(
-                    'Related Codes',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Related codes would be loaded here
-                  const Text('No related codes available'),
+                  const SizedBox(height: 12),
+                  _buildRelatedPlaceholder(context),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTag(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFB2EBF2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Color(0xFF0F1B53),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGradientButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(30),
+      child: Ink(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF0FB4D4), Color(0xFF0D9BB5)],
+          ),
+          borderRadius: BorderRadius.all(Radius.circular(30)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOutlineButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, color: const Color(0xFF0D9BB5)),
+      label: Text(
+        label,
+        style: const TextStyle(
+          color: Color(0xFF0D9BB5),
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(color: Color(0xFF0D9BB5)),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRelatedPlaceholder(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: const Text(
+        'No related codes available',
+        style: TextStyle(
+          color: Color(0xFF4A5568),
+          fontSize: 15,
+        ),
       ),
     );
   }

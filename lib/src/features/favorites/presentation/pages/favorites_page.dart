@@ -26,17 +26,22 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = theme.cardColor;
+    final scaffoldBg = theme.scaffoldBackgroundColor;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
         title: const Text('My Favorites'),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            color: DesignTokens.primary,
+            color: theme.colorScheme.secondary,
             onPressed: () {
               // Filter functionality
             },
@@ -77,7 +82,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                 // Header
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  color: Colors.grey.shade100,
+                  color: scaffoldBg,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -85,13 +90,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         'Your bookmarked codes',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade800,
                             ),
                       ),
                       Text(
                         '${favorites.length} saved codes',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey.shade600,
                             ),
                       ),
                     ],
@@ -130,6 +133,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   Widget _buildFavoriteItem(BuildContext context, MedicalCode code) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = theme.cardColor;
     return BlocBuilder<FavoritesCubit, FavoritesState>(
       builder: (context, state) {
         return FutureBuilder<bool>(
@@ -139,15 +145,17 @@ class _FavoritesPageState extends State<FavoritesPage> {
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                boxShadow: isDark
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
               child: ListTile(
                 contentPadding: const EdgeInsets.symmetric(
@@ -158,18 +166,16 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   code.code,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1A237E), // Dark blue like in design
                         fontSize: 16,
                       ),
                 ),
                 subtitle: Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    code.description,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
-                        ),
+                child: Text(
+                  code.description,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontSize: 14,
+                      ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),

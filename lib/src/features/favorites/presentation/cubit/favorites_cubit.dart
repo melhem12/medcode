@@ -68,8 +68,12 @@ class FavoritesCubit extends Cubit<FavoritesState> {
   Future<bool> isFavorite(String codeId) async {
     return await favoritesRepository.isFavorite(codeId);
   }
-}
 
+  Future<void> clearFavorites() async {
+    await favoritesRepository.clearFavorites();
+    emit(FavoritesInitial());
+  }
+}
 
 
 

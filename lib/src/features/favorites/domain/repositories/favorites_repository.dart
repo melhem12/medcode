@@ -3,8 +3,8 @@ abstract class FavoritesRepository {
   Future<void> removeFavorite(String codeId);
   Future<bool> isFavorite(String codeId);
   Future<List<String>> getFavoriteCodeIds();
+  Future<void> clearFavorites();
 }
-
 
 
 

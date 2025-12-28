@@ -4,6 +4,7 @@ import '../../domain/usecases/register_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/check_auth_status_usecase.dart';
 import '../../../../core/error/failures.dart';
+import '../../../favorites/presentation/cubit/favorites_cubit.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -12,12 +13,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final RegisterUseCase registerUseCase;
   final LogoutUseCase logoutUseCase;
   final CheckAuthStatusUseCase checkAuthStatusUseCase;
+  final FavoritesCubit favoritesCubit;
 
   AuthBloc({
     required this.loginUseCase,
     required this.registerUseCase,
     required this.logoutUseCase,
     required this.checkAuthStatusUseCase,
+    required this.favoritesCubit,
   }) : super(AuthInitial()) {
     on<LoginEvent>(_onLogin);
     on<RegisterEvent>(_onRegister);
@@ -55,7 +58,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await logoutUseCase();
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (_) => emit(AuthUnauthenticated()),
+      (_) {
+        favoritesCubit.clearFavorites();
+        emit(AuthUnauthenticated());
+      },
     );
   }
 
@@ -76,4 +82,3 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
   }
 }
-

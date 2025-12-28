@@ -11,17 +11,18 @@ class AdminHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Admin Dashboard',
-          style: TextStyle(
+          style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1A237E), // Dark blue
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor,
         elevation: 0,
         centerTitle: true,
         leading: BackButton(
@@ -44,8 +45,10 @@ class AdminHomePage extends StatelessWidget {
 
                 if (isSuperAdmin) {
                   return IconButton(
-                    icon: const Icon(Icons.admin_panel_settings),
-                    color: DesignTokens.primary, // Teal color
+                    icon: Icon(
+                      Icons.admin_panel_settings,
+                      color: theme.colorScheme.secondary,
+                    ),
                     tooltip: 'Super Admin',
                     onPressed: () {
                       // Super admin actions can be added here
@@ -130,6 +133,8 @@ class AdminHomePage extends StatelessWidget {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -145,11 +150,11 @@ class AdminHomePage extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundColor: DesignTokens.primaryLight.withOpacity(0.2),
+                backgroundColor: (isDark ? theme.colorScheme.secondary.withOpacity(0.2) : DesignTokens.primaryLight.withOpacity(0.2)),
                 child: Icon(
                   icon,
                   size: 36,
-                  color: DesignTokens.primary,
+                  color: theme.colorScheme.secondary,
                 ),
               ),
               const SizedBox(height: 12),

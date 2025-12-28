@@ -101,6 +101,7 @@ Future<void> init() async {
       registerUseCase: sl<RegisterUseCase>(),
       logoutUseCase: sl<LogoutUseCase>(),
       checkAuthStatusUseCase: sl<CheckAuthStatusUseCase>(),
+      favoritesCubit: sl<FavoritesCubit>(),
     ),
   );
 
