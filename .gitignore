@@ -33,6 +33,9 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+*.apk
+medcode/
+android/medcode/
 
 # Symbolication related
 app.*.symbols
@@ -98,6 +101,5 @@ coverage/
 
 # Test files
 test/.test_coverage.dart
-
 
 
