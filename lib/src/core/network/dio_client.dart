@@ -21,6 +21,22 @@ class DioClient {
       ),
     );
 
+    // Add logging interceptor for debugging
+    if (kDebugMode) {
+      _dio.interceptors.add(
+        LogInterceptor(
+          requestBody: true,
+          responseBody: true,
+          requestHeader: true,
+          responseHeader: true,
+          error: true,
+          logPrint: (object) {
+            debugPrint('🌐 Dio: $object');
+          },
+        ),
+      );
+    }
+
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -28,9 +44,32 @@ class DioClient {
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+          if (kDebugMode) {
+            debugPrint('📤 Request: ${options.method} ${options.uri}');
+            debugPrint('📤 Headers: ${options.headers}');
+            if (options.data != null) {
+              debugPrint('📤 Body: ${options.data}');
+            }
+          }
           return handler.next(options);
         },
+        onResponse: (response, handler) {
+          if (kDebugMode) {
+            debugPrint('📥 Response: ${response.statusCode} ${response.requestOptions.uri}');
+            debugPrint('📥 Data: ${response.data}');
+          }
+          return handler.next(response);
+        },
         onError: (error, handler) async {
+          if (kDebugMode) {
+            debugPrint('❌ Error: ${error.type} - ${error.message}');
+            debugPrint('❌ URL: ${error.requestOptions.uri}');
+            if (error.response != null) {
+              debugPrint('❌ Status: ${error.response?.statusCode}');
+              debugPrint('❌ Response: ${error.response?.data}');
+            }
+          }
+          
           if (error.response?.statusCode == 401) {
             await _storage.delete(key: 'auth_token');
             return handler.reject(
@@ -111,6 +150,7 @@ class DioClient {
 
   Dio get dio => _dio;
 }
+
 
 
 

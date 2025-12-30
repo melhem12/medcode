@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../cubit/admin_import_cubit.dart';
 import '../../../../app/di/injection_container.dart' as di;
+import '../../data/datasources/medical_codes_local_data_source.dart';
 
 class AdminImportPage extends StatelessWidget {
   final String? contentId;
@@ -16,7 +17,18 @@ class AdminImportPage extends StatelessWidget {
     final theme = Theme.of(context);
     return BlocProvider<AdminImportCubit>(
       create: (_) => di.sl<AdminImportCubit>(),
-      child: Scaffold(
+      child: PopScope(
+        canPop: true,
+        onPopInvoked: (didPop) {
+          if (!didPop) {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/admin/home');
+            }
+          }
+        },
+        child: Scaffold(
         appBar: AppBar(
           title: const Text('Import Medical Codes'),
           leading: IconButton(
@@ -31,9 +43,18 @@ class AdminImportPage extends StatelessWidget {
           ),
         ),
         body: BlocConsumer<AdminImportCubit, AdminImportState>(
-          listener: (context, state) {
+          listener: (context, state) async {
             if (state is AdminImportSuccess) {
-              showDialog(
+              // Clear local cache to ensure fresh data
+              try {
+                final localDataSource = di.sl<MedicalCodesLocalDataSource>();
+                await localDataSource.cacheMedicalCodes([]); // Clear cache
+              } catch (e) {
+                debugPrint('Error clearing cache: $e');
+              }
+              
+              // Show success dialog
+              final shouldRefresh = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: const Text('Import Complete'),
@@ -44,12 +65,18 @@ class AdminImportPage extends StatelessWidget {
                   ),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text('Close'),
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('OK'),
                     ),
                   ],
                 ),
-              );
+              ) ?? true;
+              
+              // Navigate back - the manage page will refresh when route is rebuilt
+              if (shouldRefresh && context.mounted) {
+                // Always use go() to force route rebuild which will recreate the cubit and load fresh data
+                context.go('/admin/medical-codes');
+              }
             } else if (state is AdminImportError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -92,7 +119,7 @@ class AdminImportPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Select an Excel file to import medical codes',
+                    'Select an Excel or CSV file to import medical codes',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
@@ -111,7 +138,7 @@ class AdminImportPage extends StatelessWidget {
                         Icon(Icons.description_outlined, color: theme.colorScheme.primary),
                         const SizedBox(width: 12),
                         const Expanded(
-                          child: Text('Supported: .xlsx, .xls'),
+                          child: Text('Supported: .xlsx, .xls, .csv'),
                         ),
                       ],
                     ),
@@ -139,6 +166,7 @@ class AdminImportPage extends StatelessWidget {
             );
           },
         ),
+        ),
       ),
     );
   }
@@ -146,7 +174,7 @@ class AdminImportPage extends StatelessWidget {
   Future<void> _pickAndImportFile(BuildContext context) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['xlsx', 'xls'],
+      allowedExtensions: ['xlsx', 'xls', 'csv'],
     );
 
     if (result != null && result.files.single.path != null) {

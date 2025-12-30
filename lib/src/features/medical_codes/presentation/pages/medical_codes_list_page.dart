@@ -4,8 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/bottom_navigation_bar.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../../../../core/widgets/error_view.dart';
+import '../../../../core/services/recent_searches_service.dart';
+import '../../../../core/services/code_popularity_service.dart';
+import '../../../../app/di/injection_container.dart' as di;
+import '../../data/datasources/medical_codes_local_data_source.dart';
 import '../bloc/code_list_bloc.dart';
-import '../widgets/medical_code_list_tile.dart';
+import '../../domain/entities/medical_code.dart';
 
 class MedicalCodesListPage extends StatefulWidget {
   const MedicalCodesListPage({super.key});
@@ -17,6 +21,10 @@ class MedicalCodesListPage extends StatefulWidget {
 class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
+  final _recentSearchesService = di.sl<RecentSearchesService>();
+  final _popularityService = di.sl<CodePopularityService>();
+  List<RecentSearchItem> _recentSearches = [];
+  List<MedicalCode> _popularCodes = [];
 
   @override
   void initState() {
@@ -27,12 +35,74 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
         // Check if contentId is provided in query parameters
         final uri = GoRouterState.of(context).uri;
         final contentId = uri.queryParameters['contentId'];
+        final hasContentId = contentId != null && contentId.isNotEmpty;
+        
         context.read<CodeListBloc>().add(
           LoadMedicalCodesEvent(contentId: contentId),
         );
+        
+        // Only load recent searches and popular codes if NOT filtering by content/category
+        if (!hasContentId) {
+          // Load recent searches
+          _loadRecentSearches();
+          // Load popular codes
+          _loadPopularCodes();
+        }
       }
     });
     _scrollController.addListener(_onScroll);
+  }
+
+  Future<void> _loadRecentSearches() async {
+    final searches = await _recentSearchesService.getRecentSearches();
+    if (mounted) {
+      setState(() {
+        _recentSearches = searches;
+      });
+    }
+  }
+
+  Future<void> _loadPopularCodes() async {
+    // Get top popular code IDs
+    final popularCodeIds = await _popularityService.getTopPopularCodes(10);
+    if (popularCodeIds.isEmpty) {
+      setState(() {
+        _popularCodes = [];
+      });
+      return;
+    }
+
+    // Load codes from local cache
+    final localDataSource = di.sl<MedicalCodesLocalDataSource>();
+    final allCodes = await localDataSource.getCachedMedicalCodes();
+    
+    // Create a map for quick lookup
+    final codeMap = {for (var code in allCodes) code.id: code};
+    
+    // Get popular codes in order of popularity
+    final popular = popularCodeIds
+        .map((id) => codeMap[id])
+        .whereType<MedicalCode>()
+        .toList();
+
+    if (mounted) {
+      setState(() {
+        _popularCodes = popular;
+      });
+    }
+  }
+
+  Future<void> _saveSearch(MedicalCode code) async {
+    await _recentSearchesService.saveSearch(
+      codeId: code.id,
+      code: code.code,
+      description: code.description,
+      pageMarker: code.pageMarker,
+    );
+    // Track popularity
+    await _popularityService.incrementViewCount(code.id);
+    await _loadRecentSearches();
+    await _loadPopularCodes();
   }
 
   @override
@@ -40,6 +110,28 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _handleBackButton() {
+    // Check if contentId is present in query parameters
+    final uri = GoRouterState.of(context).uri;
+    final contentId = uri.queryParameters['contentId'];
+    final hasContentId = contentId != null && contentId.isNotEmpty;
+    
+    if (hasContentId) {
+      // If accessed from home/subcategories, navigate back to contents page
+      // Use pop() if possible, otherwise go to contents
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/contents');
+      }
+    } else {
+      // Otherwise, allow default back navigation
+      if (context.canPop()) {
+        context.pop();
+      }
+    }
   }
 
   void _performSearch(String query) {
@@ -66,33 +158,67 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7FAFD),
-      appBar: AppBar(
-        title: const Text(
-          'Search',
-          style: TextStyle(
-            color: Color(0xFF1A237E),
-            fontWeight: FontWeight.w700,
+    // Check if contentId is present in query parameters
+    final uri = GoRouterState.of(context).uri;
+    final contentId = uri.queryParameters['contentId'];
+    final hasContentId = contentId != null && contentId.isNotEmpty;
+    
+    return PopScope(
+      canPop: true, // Always allow pop - we'll handle navigation in onPopInvoked
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          // Handle Android back button
+          _handleBackButton();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF7FAFD),
+        appBar: AppBar(
+          title: const Text(
+            'Search',
+            style: TextStyle(
+              color: Color(0xFF1A237E),
+              fontWeight: FontWeight.w700,
+            ),
           ),
+          centerTitle: true,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: hasContentId
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  color: const Color(0xFF1A237E),
+                  onPressed: () => _handleBackButton(),
+                )
+              : null,
+          automaticallyImplyLeading: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.filter_alt_outlined),
+              color: const Color(0xFF0D9BB5),
+              onPressed: () {
+                // Filter functionality
+              },
+            ),
+          ],
         ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_alt_outlined),
-            color: const Color(0xFF0D9BB5),
-            onPressed: () {
-              // Filter functionality
-            },
-          ),
-        ],
-      ),
       body: BlocBuilder<CodeListBloc, CodeListState>(
         builder: (context, state) {
           if (state is CodeListLoading && state is! CodeListLoadingMore) {
             return const LoadingIndicator(message: 'Loading medical codes...');
+          }
+
+          // Reload popular codes when data is loaded (only if not filtering by content)
+          if (state is CodeListLoaded) {
+            final uri = GoRouterState.of(context).uri;
+            final contentId = uri.queryParameters['contentId'];
+            final hasContentId = contentId != null && contentId.isNotEmpty;
+            
+            if (!hasContentId) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _loadPopularCodes();
+              });
+            }
           }
 
           if (state is CodeListError) {
@@ -115,16 +241,25 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
                 ? state.codes
                 : (state as CodeListLoadingMore).codes;
 
-            if (codes.isEmpty) {
-              return const Center(
-                child: Text('No medical codes found'),
+            // Check if filtering by content/category
+            final uri = GoRouterState.of(context).uri;
+            final contentId = uri.queryParameters['contentId'];
+            final hasContentId = contentId != null && contentId.isNotEmpty;
+
+            if (codes.isEmpty && !hasContentId && _recentSearches.isEmpty) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildSearchField(theme),
+                    const SizedBox(height: 40),
+                    const Center(
+                      child: Text('No medical codes found'),
+                    ),
+                  ],
+                ),
               );
             }
-
-            final recentCodes = codes.take(3).toList();
-            final popularCodes = codes.length > 3
-                ? codes.sublist(3)
-                : <dynamic>[];
 
             return SingleChildScrollView(
               controller: _scrollController,
@@ -134,22 +269,70 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
                 children: [
                   _buildSearchField(theme),
                   const SizedBox(height: 20),
-                  _buildSectionHeader(
-                    icon: Icons.history,
-                    title: 'Recent Searches',
-                  ),
-                  const SizedBox(height: 12),
-                  ...recentCodes.map((code) => _buildCodeCard(context, code)),
-                  const SizedBox(height: 20),
-                  _buildSectionHeader(
-                    icon: Icons.trending_up,
-                    title: 'Popular code',
-                  ),
-                  const SizedBox(height: 12),
-                  if (popularCodes.isEmpty)
-                    _buildEmptyCard('No popular codes available')
-                  else
-                    ...popularCodes.map((code) => _buildCodeCard(context, code)),
+                  // Only show recent searches and popular codes when NOT filtering by content/category
+                  if (!hasContentId) ...[
+                    if (_recentSearches.isNotEmpty) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildSectionHeader(
+                            icon: Icons.history,
+                            title: 'Recent Searches',
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              await _recentSearchesService.clearRecentSearches();
+                              await _loadRecentSearches();
+                            },
+                            child: const Text(
+                              'Clear',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF0D9BB5),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ..._recentSearches.take(5).map((search) => _buildRecentSearchCard(context, search)),
+                      const SizedBox(height: 20),
+                    ],
+                    if (_popularCodes.isNotEmpty) ...[
+                      _buildSectionHeader(
+                        icon: Icons.trending_up,
+                        title: 'Popular Codes',
+                      ),
+                      const SizedBox(height: 12),
+                      ..._popularCodes.map((code) => _buildCodeCard(context, code)),
+                      const SizedBox(height: 20),
+                    ],
+                  ],
+                  // Show medical codes section
+                  if (codes.isNotEmpty) ...[
+                    // Only show header if not filtering by content (to avoid duplicate headers)
+                    if (!hasContentId && (_popularCodes.isNotEmpty || _recentSearches.isNotEmpty)) ...[
+                      _buildSectionHeader(
+                        icon: Icons.medical_services_outlined,
+                        title: 'Medical Codes',
+                      ),
+                      const SizedBox(height: 12),
+                    ] else if (hasContentId) ...[
+                      // Show header when filtering by content
+                      _buildSectionHeader(
+                        icon: Icons.medical_services_outlined,
+                        title: 'Medical Codes',
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    // Show all codes (not limited to 10 when filtering by content)
+                    ...codes.map((code) => _buildCodeCard(context, code)),
+                  ] else if (!hasContentId && _popularCodes.isEmpty && _recentSearches.isEmpty) ...[
+                    // Show empty state only when not filtering
+                    const Center(
+                      child: Text('No medical codes found'),
+                    ),
+                  ],
                   if (state is CodeListLoadingMore)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 12),
@@ -163,7 +346,8 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
           return const SizedBox.shrink();
         },
       ),
-      bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 1),
+        bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 1),
+      ),
     );
   }
 
@@ -211,7 +395,7 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
     );
   }
 
-  Widget _buildCodeCard(BuildContext context, dynamic code) {
+  Widget _buildCodeCard(BuildContext context, MedicalCode code) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -220,7 +404,12 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: InkWell(
-        onTap: () => context.go('/medical-codes/${code.id}'),
+        onTap: () async {
+          await _saveSearch(code);
+          if (mounted) {
+            context.push('/medical-codes/${code.id}');
+          }
+        },
         child: Row(
           children: [
             Expanded(
@@ -269,20 +458,73 @@ class _MedicalCodesListPageState extends State<MedicalCodesListPage> {
     );
   }
 
-  Widget _buildEmptyCard(String text) {
+  Widget _buildRecentSearchCard(BuildContext context, RecentSearchItem search) {
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Color(0xFF4A5568),
-          fontSize: 15,
+      child: InkWell(
+        onTap: () => context.push('/medical-codes/${search.codeId}'),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    search.code,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1A237E),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    search.description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF4A5568),
+                    ),
+                  ),
+                  if (search.pageMarker != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Page ${search.pageMarker}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFFFFA45B),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.close,
+                size: 20,
+                color: Color(0xFF9AA3B2),
+              ),
+              onPressed: () async {
+                await _recentSearchesService.removeSearch(search.codeId);
+                await _loadRecentSearches();
+              },
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: Color(0xFF0D9BB5),
+            ),
+          ],
         ),
       ),
     );
   }
+
 }

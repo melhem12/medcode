@@ -43,7 +43,18 @@ class _ManageMedicalCodesPageState extends State<ManageMedicalCodesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/admin/home');
+          }
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Manage Medical Codes'),
         leading: IconButton(
@@ -247,6 +258,7 @@ class _ManageMedicalCodesPageState extends State<ManageMedicalCodesPage> {
               ],
             );
           },
+        ),
         ),
       ),
     );

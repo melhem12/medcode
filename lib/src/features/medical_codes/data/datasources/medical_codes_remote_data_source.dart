@@ -89,7 +89,7 @@ class MedicalCodesRemoteDataSourceImpl implements MedicalCodesRemoteDataSource {
       });
 
       final response =
-          await dioClient.dio.post('/admin/medical-codes/import', data: formData);
+          await dioClient.dio.post('/api/admin/medical-codes/import', data: formData);
       final data = response.data as Map<String, dynamic>;
       return ImportResultModel.fromJson(data);
     } on DioException catch (e) {
@@ -102,7 +102,7 @@ class MedicalCodesRemoteDataSourceImpl implements MedicalCodesRemoteDataSource {
   @override
   Future<List<Map<String, dynamic>>> exportMedicalCodes() async {
     try {
-      final response = await dioClient.dio.get('/admin/export/medical-codes');
+      final response = await dioClient.dio.get('/api/admin/export/medical-codes');
       final data = response.data as Map<String, dynamic>;
       final rows = data['data'] as List<dynamic>? ?? [];
       return rows.map((e) => (e as Map).cast<String, dynamic>()).toList();
@@ -116,7 +116,7 @@ class MedicalCodesRemoteDataSourceImpl implements MedicalCodesRemoteDataSource {
   @override
   Future<MedicalCode> createMedicalCode(Map<String, dynamic> data) async {
     try {
-      final response = await dioClient.dio.post('/admin/medical-codes', data: data);
+      final response = await dioClient.dio.post('/api/admin/medical-codes', data: data);
       final responseData = response.data as Map<String, dynamic>;
       if (responseData['status'] != 'success') {
         throw ApiException(responseData['message'] as String? ?? 'Failed to create medical code');
@@ -141,7 +141,7 @@ class MedicalCodesRemoteDataSourceImpl implements MedicalCodesRemoteDataSource {
   @override
   Future<MedicalCode> updateMedicalCode(String id, Map<String, dynamic> data) async {
     try {
-      final response = await dioClient.dio.put('/admin/medical-codes/$id', data: data);
+      final response = await dioClient.dio.put('/api/admin/medical-codes/$id', data: data);
       final responseData = response.data as Map<String, dynamic>;
       if (responseData['status'] != 'success') {
         throw ApiException(responseData['message'] as String? ?? 'Failed to update medical code');
@@ -166,7 +166,7 @@ class MedicalCodesRemoteDataSourceImpl implements MedicalCodesRemoteDataSource {
   @override
   Future<void> deleteMedicalCode(String id) async {
     try {
-      final response = await dioClient.dio.delete('/admin/medical-codes/$id');
+      final response = await dioClient.dio.delete('/api/admin/medical-codes/$id');
       final responseData = response.data as Map<String, dynamic>;
       if (responseData['status'] != 'success') {
         throw ApiException(responseData['message'] as String? ?? 'Failed to delete medical code');

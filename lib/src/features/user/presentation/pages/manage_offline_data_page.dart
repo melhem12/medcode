@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../app/theme/design_tokens.dart';
 import '../cubit/offline_data_cubit.dart';
 import '../cubit/offline_data_state.dart';
@@ -38,7 +39,18 @@ class _ManageOfflineDataPageState extends State<ManageOfflineDataPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/profile');
+          }
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Manage Offline Data'),
       ),
@@ -306,6 +318,7 @@ class _ManageOfflineDataPageState extends State<ManageOfflineDataPage> {
 
           return const SizedBox.shrink();
         },
+      ),
       ),
     );
   }

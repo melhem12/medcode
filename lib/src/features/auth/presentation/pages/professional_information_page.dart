@@ -462,6 +462,8 @@ class _ProfessionalInformationPageState
                             ),
                             child: DropdownButtonFormField<Hospital>(
                               value: _selectedHospital,
+                              isDense: true,
+                              itemHeight: 48,
                               decoration: InputDecoration(
                                 hintText: 'Select Hospital',
                                 hintStyle: theme.textTheme.bodySmall?.copyWith(
@@ -474,7 +476,7 @@ class _ProfessionalInformationPageState
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
-                                  vertical: 16,
+                                  vertical: 12,
                                 ),
                                 filled: true,
                                 fillColor: cardFill,

@@ -27,8 +27,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final cardColor = theme.cardColor;
     final scaffoldBg = theme.scaffoldBackgroundColor;
 
     return Scaffold(
@@ -192,7 +190,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   },
                 ),
                 onTap: () {
-                  context.go('/medical-codes/${code.id}');
+                  context.push('/medical-codes/${code.id}');
                 },
               ),
             );

@@ -13,7 +13,18 @@ class AdminHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    return Scaffold(
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/contents');
+          }
+        }
+      },
+      child: Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
@@ -79,19 +90,19 @@ class AdminHomePage extends StatelessWidget {
               context,
               title: 'Manage Contents',
               icon: Icons.folder_outlined,
-              onTap: () => context.go('/admin/contents'),
+              onTap: () => context.push('/admin/contents'),
             ),
             _buildAdminCard(
               context,
               title: 'Manage Medical Codes',
               icon: Icons.medical_services_outlined,
-              onTap: () => context.go('/admin/medical-codes'),
+              onTap: () => context.push('/admin/medical-codes'),
             ),
             _buildAdminCard(
               context,
               title: 'Import Codes',
               icon: Icons.upload_file_outlined,
-              onTap: () => context.go('/admin/import'),
+              onTap: () => context.push('/admin/import'),
             ),
           ];
 
@@ -102,7 +113,7 @@ class AdminHomePage extends StatelessWidget {
                 context,
                 title: 'Manage Specialities',
                 icon: Icons.badge_outlined,
-                onTap: () => context.go('/admin/specialities'),
+                onTap: () => context.push('/admin/specialities'),
               ),
             );
             cards.add(
@@ -110,7 +121,7 @@ class AdminHomePage extends StatelessWidget {
                 context,
                 title: 'Manage Hospitals',
                 icon: Icons.local_hospital_outlined,
-                onTap: () => context.go('/admin/hospitals'),
+                onTap: () => context.push('/admin/hospitals'),
               ),
             );
           }
@@ -123,6 +134,7 @@ class AdminHomePage extends StatelessWidget {
             children: cards,
           );
         },
+      ),
       ),
     );
   }

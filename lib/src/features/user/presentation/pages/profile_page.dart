@@ -1,20 +1,26 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../../../../core/widgets/bottom_navigation_bar.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../app/theme/design_tokens.dart';
+import '../../../../app/di/injection_container.dart' as di;
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../bloc/user_bloc.dart';
 import '../cubit/theme_cubit.dart';
+import '../cubit/offline_data_cubit.dart';
+import '../cubit/offline_data_state.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -32,13 +38,94 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isUploadingAvatar = false;
   Map<String, List<String>>? _fieldErrors;
   String? _localAvatarPath;
+  String? _lastSyncTime;
+  DateTime? _lastSyncDateTime;
+  Timer? _updateTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<UserBloc>().add(const GetProfileEvent());
+      _loadLastSyncTime();
     });
+  }
+
+  Future<void> _loadLastSyncTime() async {
+    try {
+      final prefs = di.sl<SharedPreferences>();
+      final statusJson = prefs.getString('sync_status');
+      if (statusJson != null) {
+        final status = jsonDecode(statusJson) as Map<String, dynamic>;
+        final lastSyncString = status['last_sync'] as String?;
+        if (lastSyncString != null) {
+          _lastSyncDateTime = DateTime.parse(lastSyncString);
+          _updateSyncTimeDisplay();
+          // Start timer to update display every minute
+          _updateTimer?.cancel();
+          _updateTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+            if (mounted && _lastSyncDateTime != null) {
+              _updateSyncTimeDisplay();
+            }
+          });
+        } else {
+          setState(() {
+            _lastSyncTime = 'Never';
+            _lastSyncDateTime = null;
+          });
+        }
+      } else {
+        setState(() {
+          _lastSyncTime = 'Never';
+          _lastSyncDateTime = null;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _lastSyncTime = 'Never';
+        _lastSyncDateTime = null;
+      });
+    }
+  }
+
+  void _updateSyncTimeDisplay() {
+    if (_lastSyncDateTime != null && mounted) {
+      setState(() {
+        _lastSyncTime = _formatTimeAgo(_lastSyncDateTime!);
+      });
+    }
+  }
+
+  String _formatTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 0) {
+      if (difference.inDays == 1) {
+        return '1 day ago';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} days ago';
+      } else if (difference.inDays < 30) {
+        final weeks = (difference.inDays / 7).floor();
+        return weeks == 1 ? '1 week ago' : '$weeks weeks ago';
+      } else if (difference.inDays < 365) {
+        final months = (difference.inDays / 30).floor();
+        return months == 1 ? '1 month ago' : '$months months ago';
+      } else {
+        final years = (difference.inDays / 365).floor();
+        return years == 1 ? '1 year ago' : '$years years ago';
+      }
+    } else if (difference.inHours > 0) {
+      return difference.inHours == 1
+          ? '1 hour ago'
+          : '${difference.inHours} hours ago';
+    } else if (difference.inMinutes > 0) {
+      return difference.inMinutes == 1
+          ? '1 minute ago'
+          : '${difference.inMinutes} minutes ago';
+    } else {
+      return 'Just now';
+    }
   }
 
   @override
@@ -46,6 +133,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _nameController.dispose();
     _emailController.dispose();
     _licenseController.dispose();
+    _updateTimer?.cancel();
     super.dispose();
   }
 
@@ -90,7 +178,19 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: !_isEditing,
+      onPopInvoked: (didPop) {
+        if (!didPop && _isEditing) {
+          // If editing, cancel edit mode
+          setState(() {
+            _isEditing = false;
+          });
+          context.read<UserBloc>().add(const GetProfileEvent());
+        }
+        // Otherwise, let ExitConfirmationWrapper handle back navigation
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
         leading: _isEditing
@@ -111,6 +211,30 @@ class _ProfilePageState extends State<ProfilePage> {
             listener: (context, state) {
               if (state is AuthUnauthenticated) {
                 context.go('/login');
+              }
+            },
+          ),
+          BlocListener<OfflineDataCubit, OfflineDataState>(
+            listener: (context, state) {
+              if (state is OfflineDataLoaded) {
+                final lastSyncString = state.syncStatus['last_sync'] as String?;
+                if (lastSyncString != null) {
+                  _lastSyncDateTime = DateTime.parse(lastSyncString);
+                  _updateSyncTimeDisplay();
+                  // Restart timer to update display every minute
+                  _updateTimer?.cancel();
+                  _updateTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+                    if (mounted && _lastSyncDateTime != null) {
+                      _updateSyncTimeDisplay();
+                    }
+                  });
+                } else {
+                  setState(() {
+                    _lastSyncTime = 'Never';
+                    _lastSyncDateTime = null;
+                  });
+                  _updateTimer?.cancel();
+                }
               }
             },
           ),
@@ -190,7 +314,8 @@ class _ProfilePageState extends State<ProfilePage> {
           },
         ),
       ),
-      bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 3),
+        bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 3),
+      ),
     );
   }
 
@@ -421,7 +546,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Last synced: 5 minutes ago',
+                        'Last synced: ${_lastSyncTime ?? 'Never'}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: DesignTokens.primary,
                             ),

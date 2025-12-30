@@ -102,8 +102,8 @@ class _ContentsHomePageState extends State<ContentsHomePage> {
           return const SizedBox.shrink();
         },
       ),
-      bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 0),
-    );
+        bottomNavigationBar: const AppBottomNavigationBar(currentIndex: 0),
+      );
   }
 
   Widget _buildContentGrid(BuildContext context, List<ContentNode> contents) {
@@ -115,7 +115,7 @@ class _ContentsHomePageState extends State<ContentsHomePage> {
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 0.85,
+          childAspectRatio: 0.75,
         ),
         itemCount: contents.length,
         itemBuilder: (context, index) {
@@ -146,21 +146,21 @@ class _ContentsHomePageState extends State<ContentsHomePage> {
             _navigateToSubcategories(context, content);
           } else {
             // Navigate to medical codes filtered by contentId
-            context.go('/medical-codes?contentId=${content.id}');
+            context.push('/medical-codes?contentId=${content.id}');
           }
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(10),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               // Icon with circular background (light blue outline)
               Center(
                 child: Container(
-                  width: 64,
-                  height: 64,
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
                     color: DesignTokens.primary.withOpacity(0.1),
                     shape: BoxShape.circle,
@@ -171,40 +171,45 @@ class _ContentsHomePageState extends State<ContentsHomePage> {
                   ),
                   child: Icon(
                     icon,
-                    size: 36,
+                    size: 30,
                     color: DesignTokens.primary,
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              // Title (bold dark blue)
-              Text(
-                content.title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: const Color(0xFF1A237E), // Dark blue
-                    ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 6),
+              // Title (bold dark blue) - responsive with wrapping
+              Expanded(
+                child: Text(
+                  content.title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: const Color(0xFF1A237E), // Dark blue
+                      ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
               ),
               const SizedBox(height: 4),
-              // Description (using sectionLabel or a default description)
+              // Description (using sectionLabel or a default description) - responsive with wrapping
               Text(
                 content.sectionLabel ?? _getDescriptionForCategory(content.title),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: Colors.grey.shade600,
-                      height: 1.3,
+                      height: 1.2,
                     ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
-              const Spacer(),
               // Code and Page reference
               if (content.codeHint != null || content.pageMarker != null)
+                const SizedBox(height: 6),
+              if (content.codeHint != null || content.pageMarker != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
                     color: Colors.orange.shade50,
                     borderRadius: BorderRadius.circular(4),
@@ -212,7 +217,7 @@ class _ContentsHomePageState extends State<ContentsHomePage> {
                   child: Text(
                     _buildCodeReference(content),
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 9,
                       color: Colors.orange.shade800,
                       fontWeight: FontWeight.w500,
                     ),
@@ -379,15 +384,15 @@ class _SubcategoriesPage extends StatelessWidget {
             );
           } else {
             // Navigate to medical codes filtered by contentId
-            context.go('/medical-codes?contentId=${subcategory.id}');
+            context.push('/medical-codes?contentId=${subcategory.id}');
           }
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Center(
                 child: Container(
@@ -409,15 +414,18 @@ class _SubcategoriesPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
-                subcategory.title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: const Color(0xFF1A237E),
-                    ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              Expanded(
+                child: Text(
+                  subcategory.title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: const Color(0xFF1A237E),
+                      ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -429,6 +437,7 @@ class _SubcategoriesPage extends StatelessWidget {
                     ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
             ],
           ),

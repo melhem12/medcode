@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../contents/domain/entities/content_node.dart';
 import '../../../contents/domain/usecases/manage_contents_usecases.dart';
 import '../../../../core/utils/file_export_helper.dart';
+import '../../../../core/utils/export_data_transformer.dart';
 import '../../../medical_codes/domain/entities/import_result.dart';
 
 part 'admin_content_crud_state.dart';
@@ -25,13 +26,22 @@ class AdminContentCrudCubit extends Cubit<AdminContentCrudState> {
   Future<void> export() async {
     emit(AdminContentCrudLoading());
     try {
-      final rows = await exportUseCase();
+      final rawRows = await exportUseCase();
+      // Transform to match import format:
+      // Column A = section_label, B = system_title, C = category_title, 
+      // D = subcategory_title, E = code_hint, F = page_marker
+      final transformedRows = ExportDataTransformer.transformContents(rawRows);
+      final directoryPath = await FileExportHelper.getAndroidExportDirectoryPath(
+        subDir: 'contents',
+      );
       final filePath = await FileExportHelper.exportToCsv(
-        data: rows,
+        data: transformedRows,
         fileName: 'contents',
+        directoryPath: directoryPath,
+        includeHeaders: false, // Contents import does NOT skip header row, so we don't include headers
       );
       final displayPath = FileExportHelper.getDisplayPath(filePath);
-      emit(AdminContentExported(rows, filePath, displayPath));
+      emit(AdminContentExported(transformedRows, filePath, displayPath));
     } catch (e) {
       emit(AdminContentCrudError(e.toString()));
     }
@@ -98,4 +108,3 @@ class AdminContentCrudCubit extends Cubit<AdminContentCrudState> {
     }
   }
 }
-

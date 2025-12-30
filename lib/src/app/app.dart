@@ -10,6 +10,7 @@ import '../features/user/presentation/cubit/offline_data_cubit.dart';
 import '../features/user/presentation/bloc/user_bloc.dart';
 import '../features/contents/presentation/cubit/contents_cubit.dart';
 import '../features/medical_codes/presentation/bloc/code_list_bloc.dart';
+import '../core/widgets/exit_confirmation_wrapper.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -50,6 +51,11 @@ class App extends StatelessWidget {
             themeMode: themeMode,
             routerConfig: appRouter,
             debugShowCheckedModeBanner: false,
+            builder: (context, child) {
+              return ExitConfirmationWrapper(
+                child: child!,
+              );
+            },
           );
         },
       ),

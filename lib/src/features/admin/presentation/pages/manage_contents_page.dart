@@ -6,6 +6,7 @@ import '../../../../core/widgets/loading_indicator.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../contents/presentation/cubit/contents_cubit.dart';
 import '../../../contents/domain/entities/content_node.dart';
+import '../../../contents/data/datasources/contents_local_data_source.dart';
 import '../cubit/admin_content_crud_cubit.dart';
 import '../../../../app/di/injection_container.dart' as di;
 
@@ -34,7 +35,18 @@ class _ManageContentsPageState extends State<ManageContentsPage> {
   Widget build(BuildContext context) {
     return BlocProvider<AdminContentCrudCubit>(
       create: (_) => di.sl<AdminContentCrudCubit>(),
-      child: Scaffold(
+      child: PopScope(
+        canPop: true,
+        onPopInvoked: (didPop) {
+          if (!didPop) {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/admin/home');
+            }
+          }
+        },
+        child: Scaffold(
         appBar: AppBar(
           title: const Text('Manage Contents'),
           leading: BackButton(
@@ -65,7 +77,7 @@ class _ManageContentsPageState extends State<ManageContentsPage> {
                   IconButton(
                     icon: const Icon(Icons.upload_file),
                     onPressed: () => _pickAndImportFile(context),
-                    tooltip: 'Import Contents',
+                    tooltip: 'Import Contents (.xlsx, .xls, .csv)',
                   ),
                   IconButton(
                     icon: const Icon(Icons.download),
@@ -83,7 +95,7 @@ class _ManageContentsPageState extends State<ManageContentsPage> {
       body: MultiBlocListener(
         listeners: [
           BlocListener<AdminContentCrudCubit, AdminContentCrudState>(
-            listener: (context, state) {
+            listener: (context, state) async {
               if (state is AdminContentExported) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -92,6 +104,14 @@ class _ManageContentsPageState extends State<ManageContentsPage> {
                   ),
                 );
               } else if (state is AdminContentImported) {
+                // Clear local cache to ensure fresh data
+                try {
+                  final localDataSource = di.sl<ContentsLocalDataSource>();
+                  await localDataSource.cacheContents([]); // Clear cache
+                } catch (e) {
+                  debugPrint('Error clearing contents cache: $e');
+                }
+                
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
@@ -170,6 +190,7 @@ class _ManageContentsPageState extends State<ManageContentsPage> {
           ),
         ),
       ),
+        ),
       ),
     );
   }
@@ -178,7 +199,7 @@ class _ManageContentsPageState extends State<ManageContentsPage> {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['xlsx', 'xls'],
+        allowedExtensions: ['xlsx', 'xls', 'csv'],
       );
 
       if (result != null && result.files.single.path != null) {

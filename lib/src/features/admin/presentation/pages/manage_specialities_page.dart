@@ -100,8 +100,19 @@ class _ManageSpecialitiesPageState extends State<ManageSpecialitiesPage> {
       create: (_) => di.sl<SpecialitiesCubit>(),
       child: BlocProvider<AdminSpecialityHospitalCubit>(
         create: (_) => di.sl<AdminSpecialityHospitalCubit>(),
-        child: Builder(
-          builder: (providerContext) => Scaffold(
+        child: PopScope(
+          canPop: true,
+          onPopInvoked: (didPop) {
+            if (!didPop) {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/admin/home');
+              }
+            }
+          },
+          child: Builder(
+            builder: (providerContext) => Scaffold(
       appBar: AppBar(
         title: const Text('Manage Specialities'),
         leading: BackButton(
@@ -199,6 +210,7 @@ class _ManageSpecialitiesPageState extends State<ManageSpecialitiesPage> {
           );
         },
       ),
+            ),
           ),
         ),
       ),

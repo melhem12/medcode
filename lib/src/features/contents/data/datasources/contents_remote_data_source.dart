@@ -40,7 +40,7 @@ class ContentsRemoteDataSourceImpl implements ContentsRemoteDataSource {
   @override
   Future<List<Map<String, dynamic>>> exportContents() async {
     try {
-      final response = await dioClient.dio.get('/admin/export/contents');
+      final response = await dioClient.dio.get('/api/admin/export/contents');
       final data = response.data as Map<String, dynamic>;
       final rows = data['data'] as List<dynamic>? ?? [];
       return rows.map((e) => (e as Map).cast<String, dynamic>()).toList();
@@ -59,7 +59,7 @@ class ContentsRemoteDataSourceImpl implements ContentsRemoteDataSource {
       });
 
       final response =
-          await dioClient.dio.post('/admin/contents/import', data: formData);
+          await dioClient.dio.post('/api/admin/contents/import', data: formData);
       final data = response.data as Map<String, dynamic>;
       return ImportResultModel.fromJson(data);
     } on DioException catch (e) {
@@ -72,7 +72,7 @@ class ContentsRemoteDataSourceImpl implements ContentsRemoteDataSource {
   @override
   Future<ContentNode> createContent(Map<String, dynamic> data) async {
     try {
-      final response = await dioClient.dio.post('/admin/contents', data: data);
+      final response = await dioClient.dio.post('/api/admin/contents', data: data);
       // Log the response for debugging "add content"
       // ignore: avoid_print
       print('createContent response: ${response.data}');
@@ -100,7 +100,7 @@ class ContentsRemoteDataSourceImpl implements ContentsRemoteDataSource {
   @override
   Future<ContentNode> updateContent(String id, Map<String, dynamic> data) async {
     try {
-      final response = await dioClient.dio.put('/admin/contents/$id', data: data);
+      final response = await dioClient.dio.put('/api/admin/contents/$id', data: data);
       // Log update response for debugging
       // ignore: avoid_print
       print('updateContent response: ${response.data}');
@@ -128,7 +128,7 @@ class ContentsRemoteDataSourceImpl implements ContentsRemoteDataSource {
   @override
   Future<void> deleteContent(String id) async {
     try {
-      final response = await dioClient.dio.delete('/admin/contents/$id');
+      final response = await dioClient.dio.delete('/api/admin/contents/$id');
       final responseData = response.data as Map<String, dynamic>;
       if (responseData['status'] != 'success') {
         throw ApiException(responseData['message'] as String? ?? 'Failed to delete content');

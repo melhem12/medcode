@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:get_it/get_it.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/material.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/user_type_selection_page.dart';
@@ -24,6 +26,7 @@ import '../../features/medical_codes/presentation/pages/admin_import_page.dart';
 import '../../features/medical_codes/presentation/pages/medical_code_detail_page.dart';
 import '../../features/user/presentation/pages/manage_offline_data_page.dart';
 import '../../core/utils/user_type_rules.dart';
+import '../../core/widgets/exit_confirmation_wrapper.dart';
 import '../di/injection_container.dart' as di;
 
 final GoRouter appRouter = GoRouter(
@@ -79,7 +82,16 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/medical-codes',
-      builder: (context, state) => const MedicalCodesListPage(),
+      builder: (context, state) {
+        // Only wrap if not coming from home/subcategories (no contentId)
+        final contentId = state.uri.queryParameters['contentId'];
+        if (contentId == null || contentId.isEmpty) {
+          return ExitConfirmationWrapper(
+            child: const MedicalCodesListPage(),
+          );
+        }
+        return const MedicalCodesListPage();
+      },
     ),
     GoRoute(
       path: '/medical-codes/:id',

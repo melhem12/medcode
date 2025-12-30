@@ -53,6 +53,8 @@ import '../../features/admin/data/sources/admin_speciality_hospital_remote_data_
 import '../../features/admin/domain/usecases/manage_specialities_hospitals_usecases.dart';
 import '../../features/auth/data/datasources/specialities_remote_data_source.dart';
 import '../../features/auth/data/datasources/hospitals_remote_data_source.dart';
+import '../../core/services/recent_searches_service.dart';
+import '../../core/services/code_popularity_service.dart';
 
 final sl = GetIt.instance;
 
@@ -63,6 +65,8 @@ Future<void> init() async {
 
   // Core
   sl.registerLazySingleton(() => DioClient());
+  sl.registerLazySingleton(() => RecentSearchesService(sl<SharedPreferences>()));
+  sl.registerLazySingleton(() => CodePopularityService(sl<SharedPreferences>()));
 
   // Auth - Data Sources
   sl.registerLazySingleton<AuthRemoteDataSource>(

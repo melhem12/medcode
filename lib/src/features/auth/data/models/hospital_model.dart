@@ -24,3 +24,7 @@ class HospitalModel extends Hospital {
 
 
 
+
+
+
+
