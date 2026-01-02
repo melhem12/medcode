@@ -43,6 +43,13 @@ class MedicalCodesLocalDataSourceImpl implements MedicalCodesLocalDataSource {
       'body_system': code.bodySystem,
       'content_id': code.contentId,
       'page_marker': code.pageMarker,
+      'flags': code.flags,
+      'a_value': code.aValue,
+      's_value': code.sValue,
+      'section_detected': code.sectionDetected,
+      'subsection_detected': code.subsectionDetected,
+      'subsubsection_detected': code.subsubsectionDetected,
+      'level4_detected': code.level4Detected,
     };
   }
 }

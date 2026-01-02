@@ -63,27 +63,38 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     UploadAvatarEvent event,
     Emitter<UserState> emit,
   ) async {
+    emit(UserLoading());
     final result = await uploadAvatarUseCase(event.filePath);
     result.fold(
       (failure) => emit(UserError(failure.message)),
-      (avatarUrl) {
-        final currentState = state;
-        if (currentState is UserLoaded) {
-          // Update user with new avatar URL
-          final updatedUser = User(
-            id: currentState.user.id,
-            email: currentState.user.email,
-            name: currentState.user.name,
-            userType: currentState.user.userType,
-            adminSubType: currentState.user.adminSubType,
-            speciality: currentState.user.speciality,
-            licenceNumber: currentState.user.licenceNumber,
-            hospitalId: currentState.user.hospitalId,
-            avatarUrl: avatarUrl,
-            isAdmin: currentState.user.isAdmin,
-          );
-          emit(UserLoaded(updatedUser));
-        }
+      (avatarUrl) async {
+        // After successful upload, refresh profile from backend to get latest data
+        final profileResult = await getProfileUseCase();
+        profileResult.fold(
+          (failure) {
+            // If refresh fails, still update with the avatar URL we got
+            final currentState = state;
+            if (currentState is UserLoaded) {
+              final updatedUser = User(
+                id: currentState.user.id,
+                email: currentState.user.email,
+                name: currentState.user.name,
+                userType: currentState.user.userType,
+                adminSubType: currentState.user.adminSubType,
+                speciality: currentState.user.speciality,
+                licenceNumber: currentState.user.licenceNumber,
+                hospitalId: currentState.user.hospitalId,
+                avatarUrl: avatarUrl,
+                isAdmin: currentState.user.isAdmin,
+              );
+              emit(UserLoaded(updatedUser));
+            }
+          },
+          (user) {
+            // Successfully refreshed from backend - use the backend data
+            emit(UserLoaded(user));
+          },
+        );
       },
     );
   }

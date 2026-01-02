@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import '../../domain/repositories/medical_codes_repository.dart';
 import '../../domain/entities/medical_code.dart';
 import '../../domain/entities/import_result.dart';
+import '../../domain/entities/import_all_result.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../core/error/exceptions.dart';
 import '../datasources/medical_codes_remote_data_source.dart';
@@ -85,6 +86,32 @@ class MedicalCodesRepositoryImpl implements MedicalCodesRepository {
   ) async {
     try {
       final result = await remoteDataSource.importMedicalCodes(filePath, contentId);
+      return Right(result);
+    } on ApiException catch (e) {
+      return Left(ServerFailure(e.message, statusCode: e.statusCode));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ImportAllResult>> importAll({
+    required String medicalCodesFilePath,
+    String? contentsFilePath,
+    String? category,
+    String? bodySystem,
+  }) async {
+    try {
+      final result = await remoteDataSource.importAll(
+        medicalCodesFilePath: medicalCodesFilePath,
+        contentsFilePath: contentsFilePath,
+        category: category,
+        bodySystem: bodySystem,
+      );
+      // Clear local cache after successful import all
+      await localDataSource.cacheMedicalCodes([]);
       return Right(result);
     } on ApiException catch (e) {
       return Left(ServerFailure(e.message, statusCode: e.statusCode));

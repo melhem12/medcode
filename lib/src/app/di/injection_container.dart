@@ -18,6 +18,7 @@ import '../../features/medical_codes/domain/repositories/medical_codes_repositor
 import '../../features/medical_codes/domain/usecases/get_medical_codes_usecase.dart';
 import '../../features/medical_codes/domain/usecases/get_medical_code_by_id_usecase.dart';
 import '../../features/medical_codes/domain/usecases/import_medical_codes_usecase.dart';
+import '../../features/medical_codes/domain/usecases/import_all_medical_codes_usecase.dart';
 import '../../features/medical_codes/domain/usecases/manage_medical_codes_usecases.dart';
 import '../../features/medical_codes/presentation/bloc/code_list_bloc.dart';
 import '../../features/medical_codes/presentation/bloc/code_detail_bloc.dart';
@@ -138,6 +139,9 @@ Future<void> init() async {
     () => ImportMedicalCodesUseCase(sl<MedicalCodesRepository>()),
   );
   sl.registerLazySingleton(
+    () => ImportAllMedicalCodesUseCase(sl<MedicalCodesRepository>()),
+  );
+  sl.registerLazySingleton(
     () => ExportMedicalCodesUseCase(sl<MedicalCodesRepository>()),
   );
   sl.registerLazySingleton(
@@ -233,6 +237,10 @@ Future<void> init() async {
   sl.registerLazySingleton(
     () => OfflineDataCubit(
       localDataSource: sl<OfflineDataLocalDataSource>(),
+      medicalCodesLocalDataSource: sl<MedicalCodesLocalDataSource>(),
+      medicalCodesRemoteDataSource: sl<MedicalCodesRemoteDataSource>(),
+      contentsLocalDataSource: sl<ContentsLocalDataSource>(),
+      contentsRemoteDataSource: sl<ContentsRemoteDataSource>(),
     ),
   );
   sl.registerLazySingleton(() => ThemeCubit(sl<SharedPreferences>()));

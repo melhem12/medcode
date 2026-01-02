@@ -151,6 +151,34 @@ class _ProfilePageState extends State<ProfilePage> {
     return '$baseDomain$path';
   }
 
+  String _formatUserType(String userType, String? adminSubType) {
+    // Format user type for display
+    switch (userType) {
+      case 'super_admin':
+        return 'Super Admin';
+      case 'admin':
+      case 'administrative':
+        if (adminSubType != null && adminSubType.isNotEmpty) {
+          // Capitalize first letter of admin sub type
+          final formattedSubType = adminSubType[0].toUpperCase() + 
+              (adminSubType.length > 1 ? adminSubType.substring(1) : '');
+          return 'Admin ($formattedSubType)';
+        }
+        return 'Admin';
+      case 'resident':
+        return 'Resident';
+      case 'physician':
+        return 'Physician';
+      default:
+        // Capitalize first letter and replace underscores with spaces
+        return userType
+            .split('_')
+            .map((word) => word[0].toUpperCase() + 
+                (word.length > 1 ? word.substring(1) : ''))
+            .join(' ');
+    }
+  }
+
   Future<void> _pickAvatar() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result != null && result.files.single.path != null) {
@@ -380,6 +408,30 @@ class _ProfilePageState extends State<ProfilePage> {
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: DesignTokens.textSecondary,
                                   ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Text(
+                              'User Type: ',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: DesignTokens.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            Text(
+                              _formatUserType(user.userType, user.adminSubType),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: DesignTokens.textSecondary,
+                                  ),
+                            ),
+                          ],
                         ),
                         if (user.licenceNumber != null &&
                             user.licenceNumber!.isNotEmpty) ...[

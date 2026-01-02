@@ -15,3 +15,13 @@ class Hospital {
 
 
 
+
+
+
+
+
+
+
+
+
+

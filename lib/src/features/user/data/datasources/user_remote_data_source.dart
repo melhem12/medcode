@@ -100,11 +100,30 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
       });
       final response = await dioClient.dio.post('/users/me/avatar', data: formData);
       final data = response.data as Map<String, dynamic>;
-      return data['avatar_url'] as String;
+      
+      // Handle different response formats
+      // Backend returns: {'status': 'success', 'user': {'avatar_url': '...'}} or {'status': 'success', 'avatar_url': '...'}
+      final avatarUrl = data['avatar_url'] ?? 
+                       data['user']?['avatar_url'] ?? 
+                       data['data']?['avatar_url'];
+      if (avatarUrl == null || avatarUrl is! String) {
+        debugPrint('Avatar upload response: $data');
+        throw ApiException('Invalid avatar URL in response: $data');
+      }
+      
+      return avatarUrl;
     } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final responseData = e.response?.data;
+      final message = (responseData is Map<String, dynamic> && responseData['message'] is String)
+          ? responseData['message'] as String
+          : (e.message ?? 'Failed to upload avatar');
+      debugPrint(
+        'uploadAvatar failed [$status] POST /users/me/avatar -> $message | data: $responseData',
+      );
       throw e.error is Exception
           ? e.error as Exception
-          : ApiException('Failed to upload avatar');
+          : ApiException(message, statusCode: status);
     }
   }
 }

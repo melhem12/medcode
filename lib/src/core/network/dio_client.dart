@@ -44,6 +44,12 @@ class DioClient {
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+          
+          // Remove Content-Type header for FormData to let Dio set multipart/form-data automatically
+          if (options.data is FormData) {
+            options.headers.remove('Content-Type');
+          }
+          
           if (kDebugMode) {
             debugPrint('📤 Request: ${options.method} ${options.uri}');
             debugPrint('📤 Headers: ${options.headers}');
@@ -70,8 +76,19 @@ class DioClient {
             }
           }
           
+          // Handle 401 Unauthorized - but don't delete token automatically
+          // Tokens don't expire, so 401 means invalid credentials or server issue
+          // Only delete token if it's explicitly an authentication error
           if (error.response?.statusCode == 401) {
-            await _storage.delete(key: 'auth_token');
+            // Check if it's a login endpoint - if so, don't delete token
+            final isLoginEndpoint = error.requestOptions.uri.path.contains('/auth/login');
+            if (!isLoginEndpoint) {
+              // For non-login endpoints, token might be invalid - but we'll keep it
+              // and let the app handle the error (user can logout manually)
+              if (kDebugMode) {
+                debugPrint('⚠️ 401 Unauthorized - token may be invalid, but keeping it for user to logout manually');
+              }
+            }
             return handler.reject(
               DioException(
                 requestOptions: error.requestOptions,

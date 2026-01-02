@@ -77,6 +77,8 @@ class OfflineDataLocalDataSourceImpl implements OfflineDataLocalDataSource {
   Future<void> clearAllOfflineData() async {
     await prefs.remove('sync_status');
     await prefs.remove('downloaded_categories');
+    await prefs.remove('cached_medical_codes'); // Clear medical codes cache
+    await prefs.remove('cached_contents'); // Clear contents cache
     // Clear all category sizes
     final keys = prefs.getKeys();
     for (final key in keys) {
@@ -86,6 +88,15 @@ class OfflineDataLocalDataSourceImpl implements OfflineDataLocalDataSource {
     }
   }
 }
+
+
+
+
+
+
+
+
+
 
 
 

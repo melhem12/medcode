@@ -23,6 +23,7 @@ import '../../features/admin/presentation/pages/manage_hospitals_page.dart';
 import '../../features/admin/presentation/cubit/admin_medical_code_crud_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_medical_codes_list_cubit.dart';
 import '../../features/medical_codes/presentation/pages/admin_import_page.dart';
+import '../../features/medical_codes/presentation/pages/admin_import_all_page.dart';
 import '../../features/medical_codes/presentation/pages/medical_code_detail_page.dart';
 import '../../features/user/presentation/pages/manage_offline_data_page.dart';
 import '../../core/utils/user_type_rules.dart';
@@ -171,6 +172,10 @@ final GoRouter appRouter = GoRouter(
         final contentId = state.uri.queryParameters['contentId'];
         return AdminImportPage(contentId: contentId);
       },
+    ),
+    GoRoute(
+      path: '/admin/import-all',
+      builder: (context, state) => const AdminImportAllPage(),
     ),
     GoRoute(
       path: '/manage-offline-data',

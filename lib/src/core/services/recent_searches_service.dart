@@ -118,3 +118,13 @@ class RecentSearchesService {
   }
 }
 
+
+
+
+
+
+
+
+
+
+

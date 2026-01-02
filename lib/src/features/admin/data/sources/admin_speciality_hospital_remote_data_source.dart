@@ -9,7 +9,7 @@ class AdminSpecialityHospitalRemoteDataSource {
 
   Future<AdminSimpleItem> createSpeciality(String name) async {
     try {
-      final res = await dioClient.dio.post('/api/admin/specialities', data: {'name': name});
+      final res = await dioClient.dio.post('/admin/specialities', data: {'name': name});
       final data = res.data as Map<String, dynamic>;
       final item = data['data'] as Map<String, dynamic>? ?? {};
       return AdminSimpleItem((item['id'] as num).toInt(), item['name'] as String);
@@ -20,7 +20,7 @@ class AdminSpecialityHospitalRemoteDataSource {
 
   Future<AdminSimpleItem> updateSpeciality(int id, String name) async {
     try {
-      final res = await dioClient.dio.put('/api/admin/specialities/$id', data: {'name': name});
+      final res = await dioClient.dio.put('/admin/specialities/$id', data: {'name': name});
       final data = res.data as Map<String, dynamic>;
       final item = data['data'] as Map<String, dynamic>? ?? {};
       return AdminSimpleItem((item['id'] as num).toInt(), item['name'] as String);
@@ -31,7 +31,7 @@ class AdminSpecialityHospitalRemoteDataSource {
 
   Future<void> deleteSpeciality(int id) async {
     try {
-      await dioClient.dio.delete('/api/admin/specialities/$id');
+      await dioClient.dio.delete('/admin/specialities/$id');
     } on DioException catch (e) {
       throw e.error is Exception ? e.error as Exception : ApiException('Failed to delete speciality');
     }
@@ -39,7 +39,7 @@ class AdminSpecialityHospitalRemoteDataSource {
 
   Future<AdminSimpleItem> createHospital(String name) async {
     try {
-      final res = await dioClient.dio.post('/api/admin/hospitals', data: {'name': name});
+      final res = await dioClient.dio.post('/admin/hospitals', data: {'name': name});
       final data = res.data as Map<String, dynamic>;
       final item = data['data'] as Map<String, dynamic>? ?? {};
       return AdminSimpleItem((item['id'] as num).toInt(), item['name'] as String);
@@ -50,7 +50,7 @@ class AdminSpecialityHospitalRemoteDataSource {
 
   Future<AdminSimpleItem> updateHospital(int id, String name) async {
     try {
-      final res = await dioClient.dio.put('/api/admin/hospitals/$id', data: {'name': name});
+      final res = await dioClient.dio.put('/admin/hospitals/$id', data: {'name': name});
       final data = res.data as Map<String, dynamic>;
       final item = data['data'] as Map<String, dynamic>? ?? {};
       return AdminSimpleItem((item['id'] as num).toInt(), item['name'] as String);
@@ -61,7 +61,7 @@ class AdminSpecialityHospitalRemoteDataSource {
 
   Future<void> deleteHospital(int id) async {
     try {
-      await dioClient.dio.delete('/api/admin/hospitals/$id');
+      await dioClient.dio.delete('/admin/hospitals/$id');
     } on DioException catch (e) {
       throw e.error is Exception ? e.error as Exception : ApiException('Failed to delete hospital');
     }

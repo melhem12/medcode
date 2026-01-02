@@ -1,7 +1,11 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import '../../domain/entities/medical_code.dart';
 import '../../domain/entities/import_result.dart';
+import '../../domain/entities/import_all_result.dart';
 import '../models/medical_code_model.dart';
 import '../models/import_result_model.dart';
+import '../models/import_all_result_model.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/error/exceptions.dart';
 import 'package:dio/dio.dart';
@@ -15,6 +19,12 @@ abstract class MedicalCodesRemoteDataSource {
   });
   Future<MedicalCode> getMedicalCodeById(String id);
   Future<ImportResult> importMedicalCodes(String filePath, String? contentId);
+  Future<ImportAllResult> importAll({
+    required String medicalCodesFilePath,
+    String? contentsFilePath,
+    String? category,
+    String? bodySystem,
+  });
   Future<List<Map<String, dynamic>>> exportMedicalCodes();
   Future<MedicalCode> createMedicalCode(Map<String, dynamic> data);
   Future<MedicalCode> updateMedicalCode(String id, Map<String, dynamic> data);
@@ -89,7 +99,7 @@ class MedicalCodesRemoteDataSourceImpl implements MedicalCodesRemoteDataSource {
       });
 
       final response =
-          await dioClient.dio.post('/api/admin/medical-codes/import', data: formData);
+          await dioClient.dio.post('/admin/medical-codes/import', data: formData);
       final data = response.data as Map<String, dynamic>;
       return ImportResultModel.fromJson(data);
     } on DioException catch (e) {
@@ -100,9 +110,100 @@ class MedicalCodesRemoteDataSourceImpl implements MedicalCodesRemoteDataSource {
   }
 
   @override
+  Future<ImportAllResult> importAll({
+    required String medicalCodesFilePath,
+    String? contentsFilePath,
+    String? category,
+    String? bodySystem,
+  }) async {
+    try {
+      debugPrint('📤 Preparing import all request...');
+      debugPrint('📁 Medical codes file path: $medicalCodesFilePath');
+      debugPrint('📁 Contents file path: $contentsFilePath');
+      
+      // Verify medical codes file exists
+      final medicalCodesFile = File(medicalCodesFilePath);
+      if (!await medicalCodesFile.exists()) {
+        throw ApiException('Medical codes file not found: $medicalCodesFilePath');
+      }
+      
+      // Verify contents file exists if provided
+      if (contentsFilePath != null && contentsFilePath.isNotEmpty) {
+        final contentsFile = File(contentsFilePath);
+        if (!await contentsFile.exists()) {
+          throw ApiException('Contents file not found: $contentsFilePath');
+        }
+      }
+      
+      final formData = FormData.fromMap({
+        'medical_codes_file': await MultipartFile.fromFile(medicalCodesFilePath),
+        if (contentsFilePath != null && contentsFilePath.isNotEmpty)
+          'contents_file': await MultipartFile.fromFile(contentsFilePath),
+        if (category != null && category.isNotEmpty) 'category': category,
+        if (bodySystem != null && bodySystem.isNotEmpty) 'body_system': bodySystem,
+      });
+
+      final endpoint = '/admin/import-all';
+      final fullUrl = '${dioClient.dio.options.baseUrl}$endpoint';
+      debugPrint('🌐 Sending POST request to: $endpoint');
+      debugPrint('🌐 Full URL will be: $fullUrl');
+      final response =
+          await dioClient.dio.post(endpoint, data: formData);
+      
+      debugPrint('✅ Response received: ${response.statusCode}');
+      debugPrint('📥 Response data: ${response.data}');
+      
+      final data = response.data as Map<String, dynamic>;
+      
+      // Check if response has status field
+      if (data['status'] == 'error') {
+        throw ApiException(
+          data['message'] as String? ?? 'Import failed',
+          statusCode: response.statusCode,
+        );
+      }
+      
+      // Verify required fields exist
+      if (!data.containsKey('medical_codes')) {
+        throw ApiException(
+          'Invalid response: medical_codes field missing',
+          statusCode: response.statusCode,
+        );
+      }
+      
+      return ImportAllResultModel.fromJson(data);
+    } on DioException catch (e) {
+      debugPrint('❌ DioException: ${e.type}');
+      debugPrint('❌ Message: ${e.message}');
+      debugPrint('❌ Status Code: ${e.response?.statusCode}');
+      debugPrint('❌ Response Data: ${e.response?.data}');
+      
+      if (e.response != null) {
+        final responseData = e.response!.data;
+        if (responseData is Map<String, dynamic>) {
+          final errorMessage = responseData['message'] as String? ?? 
+              (e.response!.statusCode == 404 
+                  ? 'Endpoint not found. Please check server configuration.' 
+                  : 'Failed to import all');
+          throw ApiException(
+            errorMessage,
+            statusCode: e.response!.statusCode,
+          );
+        }
+      }
+      throw e.error is Exception
+          ? e.error as Exception
+          : ApiException('Failed to import all: ${e.message}');
+    } catch (e) {
+      debugPrint('❌ Unexpected error: $e');
+      rethrow;
+    }
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> exportMedicalCodes() async {
     try {
-      final response = await dioClient.dio.get('/api/admin/export/medical-codes');
+      final response = await dioClient.dio.get('/admin/export/medical-codes');
       final data = response.data as Map<String, dynamic>;
       final rows = data['data'] as List<dynamic>? ?? [];
       return rows.map((e) => (e as Map).cast<String, dynamic>()).toList();
@@ -116,7 +217,7 @@ class MedicalCodesRemoteDataSourceImpl implements MedicalCodesRemoteDataSource {
   @override
   Future<MedicalCode> createMedicalCode(Map<String, dynamic> data) async {
     try {
-      final response = await dioClient.dio.post('/api/admin/medical-codes', data: data);
+      final response = await dioClient.dio.post('/admin/medical-codes', data: data);
       final responseData = response.data as Map<String, dynamic>;
       if (responseData['status'] != 'success') {
         throw ApiException(responseData['message'] as String? ?? 'Failed to create medical code');
@@ -141,7 +242,7 @@ class MedicalCodesRemoteDataSourceImpl implements MedicalCodesRemoteDataSource {
   @override
   Future<MedicalCode> updateMedicalCode(String id, Map<String, dynamic> data) async {
     try {
-      final response = await dioClient.dio.put('/api/admin/medical-codes/$id', data: data);
+      final response = await dioClient.dio.put('/admin/medical-codes/$id', data: data);
       final responseData = response.data as Map<String, dynamic>;
       if (responseData['status'] != 'success') {
         throw ApiException(responseData['message'] as String? ?? 'Failed to update medical code');
@@ -166,7 +267,7 @@ class MedicalCodesRemoteDataSourceImpl implements MedicalCodesRemoteDataSource {
   @override
   Future<void> deleteMedicalCode(String id) async {
     try {
-      final response = await dioClient.dio.delete('/api/admin/medical-codes/$id');
+      final response = await dioClient.dio.delete('/admin/medical-codes/$id');
       final responseData = response.data as Map<String, dynamic>;
       if (responseData['status'] != 'success') {
         throw ApiException(responseData['message'] as String? ?? 'Failed to delete medical code');

@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../entities/medical_code.dart';
 import '../entities/import_result.dart';
+import '../entities/import_all_result.dart';
 import '../../../../core/error/failures.dart';
 
 abstract class MedicalCodesRepository {
@@ -15,6 +16,12 @@ abstract class MedicalCodesRepository {
     String filePath,
     String? contentId,
   );
+  Future<Either<Failure, ImportAllResult>> importAll({
+    required String medicalCodesFilePath,
+    String? contentsFilePath,
+    String? category,
+    String? bodySystem,
+  });
   Future<List<Map<String, dynamic>>> exportMedicalCodes();
   Future<Either<Failure, MedicalCode>> createMedicalCode(Map<String, dynamic> data);
   Future<Either<Failure, MedicalCode>> updateMedicalCode(String id, Map<String, dynamic> data);

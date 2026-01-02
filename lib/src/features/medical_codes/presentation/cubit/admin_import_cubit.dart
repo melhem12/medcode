@@ -12,14 +12,23 @@ class AdminImportCubit extends Cubit<AdminImportState> {
       : super(AdminImportInitial());
 
   Future<void> import(String filePath, String? contentId) async {
+    if (isClosed) return;
     emit(AdminImportLoading());
     final result = await importMedicalCodesUseCase(filePath, contentId);
+    if (isClosed) return;
     result.fold(
       (failure) => emit(AdminImportError(failure.message)),
       (importResult) => emit(AdminImportSuccess(importResult)),
     );
   }
+
+  void reset() {
+    if (isClosed) return;
+    emit(AdminImportInitial());
+  }
 }
+
+
 
 
 

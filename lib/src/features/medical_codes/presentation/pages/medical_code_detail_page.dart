@@ -12,68 +12,11 @@ import '../bloc/code_detail_bloc.dart';
 import '../../../favorites/presentation/cubit/favorites_cubit.dart';
 import '../../../favorites/presentation/cubit/favorites_state.dart';
 import '../../data/datasources/medical_codes_local_data_source.dart';
-import '../../../contents/data/datasources/contents_local_data_source.dart';
-import '../../../contents/domain/entities/content_node.dart';
 
 class MedicalCodeDetailPage extends StatelessWidget {
   final String codeId;
 
   const MedicalCodeDetailPage({super.key, required this.codeId});
-
-  Future<_ContentBadges> _loadContentBadges(String? contentId) async {
-    if (contentId == null || contentId.isEmpty) {
-      return const _ContentBadges();
-    }
-    final contents = await di.sl<ContentsLocalDataSource>().getCachedContents();
-    if (contents.isEmpty) {
-      return const _ContentBadges();
-    }
-
-    final nodeById = <String, ContentNode>{};
-    final parentById = <String, String?>{};
-
-    void walk(ContentNode node, String? parentId) {
-      nodeById[node.id] = node;
-      parentById[node.id] = parentId;
-      for (final child in node.children) {
-        walk(child, node.id);
-      }
-    }
-
-    for (final root in contents) {
-      walk(root, null);
-    }
-
-    final node = nodeById[contentId];
-    if (node == null) {
-      return const _ContentBadges();
-    }
-
-    String? sectionName;
-    if (node.level == 'section') {
-      sectionName = node.title;
-    } else {
-      var currentId = node.id;
-      while (true) {
-        final parentId = parentById[currentId];
-        if (parentId == null) {
-          break;
-        }
-        final parent = nodeById[parentId];
-        if (parent == null) {
-          break;
-        }
-        if (parent.level == 'section') {
-          sectionName = parent.title;
-          break;
-        }
-        currentId = parent.id;
-      }
-    }
-
-    final subcategoryName = node.level == 'section' ? null : node.title;
-    return _ContentBadges(sectionName: sectionName, subcategoryName: subcategoryName);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -191,6 +134,8 @@ class MedicalCodeDetailPage extends StatelessWidget {
                       children: [
                         Text(
                           code.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
@@ -202,18 +147,30 @@ class MedicalCodeDetailPage extends StatelessWidget {
                           spacing: 10,
                           runSpacing: 10,
                           children: [
-                            FutureBuilder<_ContentBadges>(
-                              future: _loadContentBadges(code.contentId),
-                              builder: (context, snapshot) {
-                                final badges = snapshot.data;
+                            Builder(
+                              builder: (context) {
                                 final tags = <Widget>[];
-                                final sectionName = badges?.sectionName ?? code.category;
-                                final subcategoryName = badges?.subcategoryName ?? code.bodySystem;
-                                if (sectionName != null && sectionName.isNotEmpty) {
-                                  tags.add(_buildTag('Content', sectionName));
+                                // Show section, subsection, sub-subsection, and level4 as badges
+                                if (code.sectionDetected != null && code.sectionDetected!.isNotEmpty) {
+                                  tags.add(_buildTag('Section', code.sectionDetected!));
                                 }
-                                if (subcategoryName != null && subcategoryName.isNotEmpty) {
-                                  tags.add(_buildTag('Subcategory', subcategoryName));
+                                if (code.subsectionDetected != null && code.subsectionDetected!.isNotEmpty) {
+                                  tags.add(_buildTag('Subsection', code.subsectionDetected!));
+                                }
+                                if (code.subsubsectionDetected != null && code.subsubsectionDetected!.isNotEmpty) {
+                                  tags.add(_buildTag('Sub-subsection', code.subsubsectionDetected!));
+                                }
+                                if (code.level4Detected != null && code.level4Detected!.isNotEmpty) {
+                                  tags.add(_buildTag('Level 4', code.level4Detected!));
+                                }
+                                // Fallback to category/bodySystem if hierarchy fields are not available
+                                if (tags.isEmpty) {
+                                  if (code.category != null && code.category!.isNotEmpty) {
+                                    tags.add(_buildTag('Category', code.category!));
+                                  }
+                                  if (code.bodySystem != null && code.bodySystem!.isNotEmpty) {
+                                    tags.add(_buildTag('Body System', code.bodySystem!));
+                                  }
                                 }
                                 if (code.pageMarker != null) {
                                   tags.add(_buildTag('Page', code.pageMarker!));
@@ -254,6 +211,79 @@ class MedicalCodeDetailPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 20),
+                        const Divider(),
+                        const SizedBox(height: 16),
+                        // Additional Details Section
+                        if (code.flags != null ||
+                            code.aValue != null ||
+                            code.sValue != null ||
+                            code.sectionDetected != null ||
+                            code.subsectionDetected != null ||
+                            code.subsubsectionDetected != null ||
+                            code.level4Detected != null) ...[
+                          const Text(
+                            'Additional Details',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F1B53),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              if (code.flags != null && code.flags!.isNotEmpty)
+                                _buildClickableDetailTag(
+                                  context,
+                                  'Flags',
+                                  code.flags!,
+                                  _getFlagHint(code.flags!),
+                                ),
+                              if (code.aValue != null)
+                                _buildClickableDetailTag(
+                                  context,
+                                  'A Value',
+                                  code.aValue!.toStringAsFixed(2),
+                                  'Means the anesthesiologist',
+                                ),
+                              if (code.sValue != null)
+                                _buildClickableDetailTag(
+                                  context,
+                                  'S Value',
+                                  code.sValue!.toStringAsFixed(2),
+                                  'Means the surgeon',
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Hierarchy Section
+                          if (code.sectionDetected != null ||
+                              code.subsectionDetected != null ||
+                              code.subsubsectionDetected != null ||
+                              code.level4Detected != null) ...[
+                            const Text(
+                              'Content Hierarchy',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF0F1B53),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildHierarchyItem('Section', code.sectionDetected),
+                            if (code.subsectionDetected != null && code.subsectionDetected!.isNotEmpty)
+                              _buildHierarchyItem('Subsection', code.subsectionDetected),
+                            if (code.subsubsectionDetected != null && code.subsubsectionDetected!.isNotEmpty)
+                              _buildHierarchyItem('Sub-subsection', code.subsubsectionDetected),
+                            if (code.level4Detected != null && code.level4Detected!.isNotEmpty)
+                              _buildHierarchyItem('Level 4', code.level4Detected),
+                          ],
+                          const SizedBox(height: 20),
+                          const Divider(),
+                          const SizedBox(height: 16),
+                        ],
                         Row(
                           children: [
                             Expanded(
@@ -345,6 +375,194 @@ class MedicalCodeDetailPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildClickableDetailTag(
+    BuildContext context,
+    String label,
+    String value,
+    String? hint,
+  ) {
+    final hasHint = hint != null && hint.isNotEmpty;
+    return GestureDetector(
+      onTap: hasHint
+          ? () => _showHintDialog(context, label, value, hint)
+          : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F9FF),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: hasHint
+                ? const Color(0xFF0F9CB5).withOpacity(0.5)
+                : const Color(0xFF0F9CB5).withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: '$label: ',
+                    style: const TextStyle(
+                      color: Color(0xFF4A5568),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  TextSpan(
+                    text: value,
+                    style: const TextStyle(
+                      color: Color(0xFF1A237E),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (hasHint) ...[
+              const SizedBox(width: 6),
+              Icon(
+                Icons.info_outline,
+                size: 16,
+                color: const Color(0xFF0F9CB5).withOpacity(0.7),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String? _getFlagHint(String flag) {
+    switch (flag.trim()) {
+      case 'E':
+        return 'Work that requires prior approval or agreement';
+      case '**':
+        return 'Work whose health coverage is not currently covered by social security';
+      default:
+        return null;
+    }
+  }
+
+  void _showHintDialog(
+    BuildContext context,
+    String label,
+    String value,
+    String hint,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F9CB5).withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.info_outlined,
+                    size: 32,
+                    color: Color(0xFF0F9CB5),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  '$label: $value',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F1B53),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  hint,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF4A5568),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0F9CB5),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Got it',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHierarchyItem(String label, String? value) {
+    if (value == null || value.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF6B7280),
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Color(0xFF0F1B53),
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -592,11 +810,4 @@ class MedicalCodeDetailPage extends StatelessWidget {
 
     return spans;
   }
-}
-
-class _ContentBadges {
-  final String? sectionName;
-  final String? subcategoryName;
-
-  const _ContentBadges({this.sectionName, this.subcategoryName});
 }
