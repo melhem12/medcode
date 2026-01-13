@@ -48,3 +48,4 @@ class UploadAvatarEvent extends UserEvent {
 
 
 
+

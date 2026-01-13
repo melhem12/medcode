@@ -59,3 +59,4 @@ class FavoritesError extends FavoritesState {
 
 
 
+

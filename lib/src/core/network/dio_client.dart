@@ -1,10 +1,6 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-
 import '../config/app_config.dart';
 import '../error/exceptions.dart';
 
@@ -19,13 +15,13 @@ class DioClient {
         connectTimeout: AppConfig.connectTimeout,
         receiveTimeout: AppConfig.receiveTimeout,
         headers: {
-          'Accept': 'application/json',
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       ),
     );
 
-    // Logging interceptor
+    // Add logging interceptor for debugging
     if (kDebugMode) {
       _dio.interceptors.add(
         LogInterceptor(
@@ -34,7 +30,9 @@ class DioClient {
           requestHeader: true,
           responseHeader: true,
           error: true,
-          logPrint: (object) => debugPrint('🌐 Dio: $object'),
+          logPrint: (object) {
+            debugPrint('🌐 Dio: $object');
+          },
         ),
       );
     }
@@ -43,21 +41,15 @@ class DioClient {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           final token = await _storage.read(key: 'auth_token');
-
-          // ✅ ONLY CHANGE: build headers dynamically
-          final headers = await _buildHeaders(token: token);
-
-          // Merge (keep request-specific headers if any)
-          options.headers = {
-            ...headers,
-            ...options.headers,
-          };
-
-          // Let Dio set multipart headers automatically
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          
+          // Remove Content-Type header for FormData to let Dio set multipart/form-data automatically
           if (options.data is FormData) {
             options.headers.remove('Content-Type');
           }
-
+          
           if (kDebugMode) {
             debugPrint('📤 Request: ${options.method} ${options.uri}');
             debugPrint('📤 Headers: ${options.headers}');
@@ -65,14 +57,11 @@ class DioClient {
               debugPrint('📤 Body: ${options.data}');
             }
           }
-
           return handler.next(options);
         },
         onResponse: (response, handler) {
           if (kDebugMode) {
-            debugPrint(
-              '📥 Response: ${response.statusCode} ${response.requestOptions.uri}',
-            );
+            debugPrint('📥 Response: ${response.statusCode} ${response.requestOptions.uri}');
             debugPrint('📥 Data: ${response.data}');
           }
           return handler.next(response);
@@ -86,17 +75,20 @@ class DioClient {
               debugPrint('❌ Response: ${error.response?.data}');
             }
           }
-
+          
+          // Handle 401 Unauthorized - but don't delete token automatically
+          // Tokens don't expire, so 401 means invalid credentials or server issue
+          // Only delete token if it's explicitly an authentication error
           if (error.response?.statusCode == 401) {
-            final isLoginEndpoint =
-                error.requestOptions.uri.path.contains('/auth/login');
-
-            if (!isLoginEndpoint && kDebugMode) {
-              debugPrint(
-                '⚠️ 401 Unauthorized - token kept, user can logout manually',
-              );
+            // Check if it's a login endpoint - if so, don't delete token
+            final isLoginEndpoint = error.requestOptions.uri.path.contains('/auth/login');
+            if (!isLoginEndpoint) {
+              // For non-login endpoints, token might be invalid - but we'll keep it
+              // and let the app handle the error (user can logout manually)
+              if (kDebugMode) {
+                debugPrint('⚠️ 401 Unauthorized - token may be invalid, but keeping it for user to logout manually');
+              }
             }
-
             return handler.reject(
               DioException(
                 requestOptions: error.requestOptions,
@@ -121,32 +113,6 @@ class DioClient {
     );
   }
 
-  // ✅ Dynamic headers (version + platform + bearer)
-  Future<Map<String, String>> _buildHeaders({String? token}) async {
-    final packageInfo = await PackageInfo.fromPlatform();
-
-    final platform = Platform.isAndroid
-        ? 'android'
-        : Platform.isIOS
-            ? 'ios'
-            : 'unknown';
-
-    final headers = <String, String>{
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'User-Agent':
-          'Medcode-Mobile/${packageInfo.version} (Flutter; $platform)',
-      'X-App-Version': packageInfo.version,
-      'X-Platform': platform,
-    };
-
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-
-    return headers;
-  }
-
   Exception _handleError(DioException error) {
     final method = error.requestOptions.method;
     final uri = error.requestOptions.uri;
@@ -154,55 +120,53 @@ class DioClient {
 
     if (error.response != null) {
       final data = error.response!.data;
-
       if (data is Map<String, dynamic>) {
         final message = data['message'] as String? ?? 'An error occurred';
         final fieldErrors = data['errors'] as Map<String, dynamic>?;
-
+        
         Map<String, List<String>>? parsedFieldErrors;
         if (fieldErrors != null) {
           parsedFieldErrors = {};
           fieldErrors.forEach((key, value) {
             if (value is List) {
-              parsedFieldErrors![key] =
-                  value.map((e) => e.toString()).toList();
+              parsedFieldErrors![key] = value.map((e) => e.toString()).toList();
             } else {
               parsedFieldErrors![key] = [value.toString()];
             }
           });
         }
-
-        debugPrint('API error [$status] $method $uri -> $message');
-
+        
+        debugPrint(
+          'API error [$status] $method $uri -> $message',
+        );
         return ApiException(
           message,
           statusCode: error.response!.statusCode,
           fieldErrors: parsedFieldErrors,
         );
       }
-
+      debugPrint(
+        'API error [$status] $method $uri -> Server error: ${error.response!.statusCode}',
+      );
       return ApiException(
         'Server error: ${error.response!.statusCode}',
         statusCode: error.response!.statusCode,
       );
-    }
-
-    if (error.type == DioExceptionType.connectionTimeout ||
+    } else if (error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.receiveTimeout ||
         error.type == DioExceptionType.sendTimeout) {
-      return NetworkException(
-        'Connection timeout. Please check your internet connection.',
-      );
+      debugPrint('Network timeout $method $uri');
+      return NetworkException('Connection timeout. Please check your internet connection.');
+    } else if (error.type == DioExceptionType.connectionError) {
+      debugPrint('Network connection error $method $uri -> ${error.message}');
+      return NetworkException('No internet connection. Please check your network settings.');
     }
-
-    if (error.type == DioExceptionType.connectionError) {
-      return NetworkException(
-        'No internet connection. Please check your network settings.',
-      );
-    }
-
+    debugPrint('Unexpected error $method $uri -> ${error.message}');
     return NetworkException(error.message ?? 'An unexpected error occurred');
   }
 
   Dio get dio => _dio;
 }
+
+
+
