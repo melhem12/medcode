@@ -41,3 +41,4 @@ class SpecialityModel extends Speciality {
 
 
 
+

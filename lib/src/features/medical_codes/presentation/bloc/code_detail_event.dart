@@ -36,3 +36,4 @@ class LoadMedicalCodeEvent extends CodeDetailEvent {
 
 
 
+

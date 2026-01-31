@@ -4,13 +4,13 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <application
-        android:label="medcode"
+        android:label="MedCode"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
         android:requestLegacyExternalStorage="true"
         android:enableOnBackInvokedCallback="true">
         <activity
-            android:name="com.set.medcode.MainActivity"
+            android:name="com.shk.medcode.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""

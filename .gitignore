@@ -36,6 +36,8 @@ migrate_working_dir/
 *.apk
 medcode/
 android/medcode/
+# Android MainActivity package (do not ignore)
+!android/app/src/main/kotlin/com/shk/medcode/
 
 # Symbolication related
 app.*.symbols
@@ -101,6 +103,7 @@ coverage/
 
 # Test files
 test/.test_coverage.dart
+
 
 
 

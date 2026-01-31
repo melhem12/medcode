@@ -24,6 +24,8 @@ class AuthRepositoryImpl implements AuthRepository {
       String email, String password) async {
     try {
       final response = await remoteDataSource.login(email, password);
+      // Set token in DioClient immediately to avoid race conditions
+      await dioClient.setAuthToken(response.token);
       await localDataSource.cacheAuthToken(response.token);
       await localDataSource.cacheUser(response.user);
       return Right(response);
@@ -45,6 +47,8 @@ class AuthRepositoryImpl implements AuthRepository {
       Map<String, dynamic> payload) async {
     try {
       final response = await remoteDataSource.register(payload);
+      // Set token in DioClient immediately to avoid race conditions
+      await dioClient.setAuthToken(response.token);
       await localDataSource.cacheAuthToken(response.token);
       await localDataSource.cacheUser(response.user);
       return Right(response);
@@ -66,6 +70,7 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, void>> logout() async {
     try {
+      await dioClient.clearAuthToken();
       await localDataSource.clearAuthToken();
       await localDataSource.clearUser();
       return const Right(null);

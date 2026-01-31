@@ -1,4 +1,4 @@
-package com.set.medcode
+package com.shk.medcode
 
 import io.flutter.embedding.android.FlutterActivity
 
